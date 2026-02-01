@@ -3,370 +3,1189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survey Data Validator</title>
+    <title>SurveyValidator - Professional Survey Data QC</title>
+    <meta name="description" content="Validate survey coordinates with automated quality control checks for duplicates, outliers, traverse closure, and more.">
     <style>
+        :root {
+            --primary: #ff8c00;
+            --primary-dark: #cc7000;
+            --bg-dark: #0f0f0f;
+            --bg-card: #1a1a1a;
+            --bg-input: #252525;
+            --bg-hover: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666;
+            --border: #333;
+            --error: #ef4444;
+            --error-bg: #3d1f1f;
+            --warning: #f59e0b;
+            --warning-bg: #3d3520;
+            --success: #22c55e;
+            --success-bg: #1f3d2a;
+            --info: #3b82f6;
+            --info-bg: #1f2d3d;
+        }
+
         * {
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
         }
+
         body {
-            max-width: 1000px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-content {
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
         }
-        h1 {
-            color: #ff8c00;
-            text-align: center;
-            margin-bottom: 5px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #cccccc;
-            margin-bottom: 30px;
-            font-size: 18px;
-        }
-        .card {
-            background: #2d2d2d;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        }
-        h2 {
-            margin-top: 0;
-            color: #ff8c00;
-            font-size: 20px;
+
+        .logo {
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
         }
-        .help-text {
-            background: #3d3d3d;
-            border-left: 4px solid #ff8c00;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 0 8px 8px 0;
-            color: #e0e0e0;
-        }
-        
-        /* Table Styles */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-        }
-        th {
-            background: #ff8c00;
-            color: #1a1a1a;
-            padding: 12px 8px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        th:first-child { border-radius: 8px 0 0 0; }
-        th:last-child { border-radius: 0 8px 0 0; }
-        td {
-            padding: 4px;
-            border-bottom: 1px solid #444;
-        }
-        tr:hover {
-            background: #3d3d3d;
-        }
-        input[type="text"], input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #444;
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
             border-radius: 6px;
-            font-size: 14px;
-            background: #1a1a1a;
-            color: #e0e0e0;
-        }
-        input:focus {
-            outline: none;
-            border-color: #ff8c00;
-            background: #2d2d2d;
-        }
-        select {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #444;
-            border-radius: 6px;
-            font-size: 14px;
-            background: #1a1a1a;
-            color: #e0e0e0;
-        }
-        .delete-btn {
-            background: #fc8181;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 12px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .delete-btn:hover {
-            background: #f56565;
-        }
-        
-        /* Buttons */
-        .button-row {
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 15px;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg-dark);
+            font-weight: bold;
         }
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--primary), #ffb347);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 24px;
+        }
+
+        /* Feature Chips */
+        .feature-chips {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .chip {
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.2s;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
         }
-        .btn-primary {
-            background: #ff8c00;
-            color: #1a1a1a;
+
+        .chip-icon {
+            font-size: 16px;
+        }
+
+        .chip-check {
+            color: var(--success);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
             font-weight: 600;
         }
+
+        .card-title-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Input Format Info */
+        .input-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: var(--bg-input);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .input-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-info-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-info-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Import Options */
+        .import-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .import-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg-input);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .import-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--bg-hover);
+        }
+
+        .import-btn input[type="file"] {
+            display: none;
+        }
+
+        /* Data Table */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            background: var(--bg-input);
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        th .required {
+            color: var(--error);
+            margin-left: 2px;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-hover);
+        }
+
+        tbody tr.error-row {
+            background: var(--error-bg);
+        }
+
+        tbody tr.error-row:hover {
+            background: #4d2525;
+        }
+
+        td {
+            padding: 8px;
+        }
+
+        .row-number {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-align: center;
+            width: 40px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
+        }
+
+        input.input-error {
+            border-color: var(--error);
+            background: var(--error-bg);
+        }
+
+        input.input-error:focus {
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: var(--error-bg);
+            color: var(--error);
+        }
+
+        /* Buttons */
+        .button-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--bg-dark);
+        }
+
         .btn-primary:hover {
-            background: #cc7000;
+            background: var(--primary-dark);
             transform: translateY(-1px);
         }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-secondary {
-            background: #444;
-            color: #e0e0e0;
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
         }
+
         .btn-secondary:hover {
-            background: #555;
+            background: var(--bg-hover);
+            border-color: var(--text-muted);
         }
-        .btn-add {
-            background: #ff6600;
-            color: #1a1a1a;
+
+        .btn-success {
+            background: var(--success);
+            color: white;
         }
-        .btn-add:hover {
-            background: #cc5200;
+
+        .btn-success:hover {
+            background: #1ea04e;
         }
-        .btn-sample {
-            background: #b35900;
-            color: #e0e0e0;
+
+        /* Main CTA */
+        .cta-section {
+            text-align: center;
+            padding: 32px 0;
         }
-        .btn-sample:hover {
-            background: #994d00;
+
+        .btn-validate {
+            padding: 18px 48px;
+            font-size: 18px;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(255, 140, 0, 0.3);
         }
-        
-        /* Results */
+
+        .btn-validate:hover {
+            box-shadow: 0 6px 30px rgba(255, 140, 0, 0.4);
+        }
+
+        .validation-errors {
+            margin-top: 16px;
+            color: var(--error);
+            font-size: 14px;
+        }
+
+        /* Accordion */
+        .accordion {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-input);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .accordion-header:hover {
+            background: var(--bg-hover);
+        }
+
+        .accordion-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .accordion-icon {
+            transition: transform 0.2s;
+        }
+
+        .accordion.open .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            display: none;
+            padding: 20px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+        }
+
+        .accordion.open .accordion-content {
+            display: block;
+        }
+
+        .assumptions-list {
+            list-style: none;
+        }
+
+        .assumptions-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .assumptions-list li::before {
+            content: "ℹ️";
+            flex-shrink: 0;
+        }
+
+        /* Results Section */
         .results {
             display: none;
         }
+
         .results.show {
             display: block;
+            animation: slideIn 0.3s ease;
         }
-        .status-box {
-            text-align: center;
-            padding: 25px;
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Status Banner */
+        .status-banner {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 24px;
             border-radius: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
-        .status-box.pass {
-            background: linear-gradient(135deg, #2d4a2d, #1a3d1a);
-            color: #90ee90;
+
+        .status-banner.pass {
+            background: linear-gradient(135deg, var(--success-bg), #1a2e1f);
+            border: 1px solid var(--success);
         }
-        .status-box.warning {
-            background: linear-gradient(135deg, #4a3d1a, #3d3020);
-            color: #ffd700;
+
+        .status-banner.warning {
+            background: linear-gradient(135deg, var(--warning-bg), #2e2a1a);
+            border: 1px solid var(--warning);
         }
-        .status-box.fail {
-            background: linear-gradient(135deg, #4a2020, #3d1a1a);
-            color: #ff6b6b;
+
+        .status-banner.fail {
+            background: linear-gradient(135deg, var(--error-bg), #2e1a1a);
+            border: 1px solid var(--error);
         }
-        .status-text {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 10px;
+
+        .status-icon {
+            font-size: 48px;
         }
+
+        .status-content {
+            flex: 1;
+        }
+
+        .status-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .status-banner.pass .status-title { color: var(--success); }
+        .status-banner.warning .status-title { color: var(--warning); }
+        .status-banner.fail .status-title { color: var(--error); }
+
         .status-subtitle {
-            font-size: 18px;
+            color: var(--text-secondary);
+            font-size: 14px;
         }
-        
-        .stats-row {
+
+        /* Stats Grid */
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
         }
-        .stat-box {
-            background: #3d3d3d;
-            padding: 20px;
+
+        .stat-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
             border-radius: 10px;
+            padding: 20px;
             text-align: center;
         }
-        .stat-number {
+
+        .stat-card.error { border-color: var(--error); }
+        .stat-card.warning { border-color: var(--warning); }
+        .stat-card.info { border-color: var(--info); }
+        .stat-card.score { border-color: var(--primary); }
+
+        .stat-value {
             font-size: 36px;
-            font-weight: bold;
-            color: #ff8c00;
+            font-weight: 700;
+            margin-bottom: 4px;
         }
+
+        .stat-card.error .stat-value { color: var(--error); }
+        .stat-card.warning .stat-value { color: var(--warning); }
+        .stat-card.info .stat-value { color: var(--info); }
+        .stat-card.score .stat-value { color: var(--primary); }
+
         .stat-label {
-            color: #aaa;
-            font-size: 14px;
-            margin-top: 5px;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        
-        .issue-card {
-            background: #3d2020;
-            border-left: 4px solid #fc8181;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 0 8px 8px 0;
+
+        /* Checks Performed Tags */
+        .checks-performed {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
         }
-        .issue-card.warning {
-            background: #3d3020;
-            border-color: #ff8c00;
+
+        .check-tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
         }
-        .issue-card.info {
-            background: #203040;
-            border-color: #4299e1;
+
+        .check-tag::before {
+            content: "✓";
+            color: var(--success);
         }
-        .issue-title {
+
+        /* Issues Table */
+        .issues-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+
+        .issues-table th {
+            background: var(--bg-input);
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .issues-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .severity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
             font-weight: 600;
-            color: #fc8181;
-            margin-bottom: 5px;
+            text-transform: uppercase;
         }
-        .issue-card.warning .issue-title {
-            color: #ff8c00;
+
+        .severity-badge.error {
+            background: var(--error-bg);
+            color: var(--error);
         }
-        .issue-card.info .issue-title {
-            color: #63b3ed;
+
+        .severity-badge.warning {
+            background: var(--warning-bg);
+            color: var(--warning);
         }
+
+        .severity-badge.info {
+            background: var(--info-bg);
+            color: var(--info);
+        }
+
         .issue-points {
-            font-size: 13px;
-            color: #aaa;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
         }
-        
+
+        .point-tag {
+            background: var(--bg-input);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .issue-message {
+            color: var(--text-primary);
+        }
+
+        .issue-fix {
+            color: var(--text-muted);
+            font-size: 13px;
+            font-style: italic;
+        }
+
+        /* No Issues */
         .no-issues {
             text-align: center;
-            padding: 30px;
-            background: #2d4a2d;
-            border-radius: 10px;
-            color: #90ee90;
-            font-size: 18px;
+            padding: 48px;
+            background: var(--success-bg);
+            border: 1px solid var(--success);
+            border-radius: 12px;
+            margin-bottom: 24px;
         }
-        
-        .hidden { display: none; }
-        
-        @media (max-width: 600px) {
-            .stats-row {
+
+        .no-issues-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .no-issues-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--success);
+            margin-bottom: 8px;
+        }
+
+        .no-issues-subtitle {
+            color: var(--text-secondary);
+        }
+
+        /* Export Buttons */
+        .export-section {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 13px;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        /* CSV Paste Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .csv-help {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 28px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .input-info {
                 grid-template-columns: 1fr;
             }
-            .button-row {
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-chips {
                 flex-direction: column;
-            }
-            th, td {
-                padding: 6px 4px;
-                font-size: 12px;
-            }
-            input, select {
-                padding: 8px;
-                font-size: 12px;
+                align-items: center;
             }
         }
     </style>
 </head>
 <body>
-    <h1> Survey Data Validator</h1>
-    <p class="subtitle">Check your survey coordinates for errors - fast and easy</p>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="#" class="logo">
+                <div class="logo-icon">SV</div>
+                SurveyValidator
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#input">Input Data</a>
+                <a href="javascript:loadSample()">Load Example</a>
+            </div>
+        </div>
+    </nav>
 
-    <div class="card">
-        <h2> Enter Your Survey Points</h2>
-        
-        <div class="help-text">
-            <strong>How to use:</strong> Enter your survey points in the table below, just like in your field book. 
-            Then click the green <strong>"Check My Data"</strong> button.
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero" id="features">
+            <h1>Survey Data Quality Control</h1>
+            <p class="hero-subtitle">
+                Professional validation engine for survey coordinates. Catch errors before they cost you time and money.
+            </p>
+
+            <!-- Feature Chips - What We Check -->
+            <div class="feature-chips">
+                <div class="chip">
+                    <span class="chip-icon chip-check">✓</span>
+                    Duplicate Detection
+                </div>
+                <div class="chip">
+                    <span class="chip-icon chip-check">✓</span>
+                    Coordinate Validation
+                </div>
+                <div class="chip">
+                    <span class="chip-icon chip-check">✓</span>
+                    Outlier Analysis
+                </div>
+                <div class="chip">
+                    <span class="chip-icon chip-check">✓</span>
+                    Traverse Closure
+                </div>
+                <div class="chip">
+                    <span class="chip-icon chip-check">✓</span>
+                    Geometry Checks
+                </div>
+            </div>
+        </section>
+
+        <!-- Input Card -->
+        <div class="card" id="input">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon">📍</div>
+                    Survey Point Data
+                </div>
+                <div class="button-row">
+                    <button class="btn btn-secondary" onclick="loadSample()">📝 Load Example</button>
+                    <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear</button>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <!-- Input Format Info -->
+                <div class="input-info">
+                    <div class="input-info-item">
+                        <span class="input-info-label">Coordinate Units</span>
+                        <span class="input-info-value">Meters (projected coordinates)</span>
+                    </div>
+                    <div class="input-info-item">
+                        <span class="input-info-label">Height</span>
+                        <span class="input-info-value">Optional (meters above datum)</span>
+                    </div>
+                    <div class="input-info-item">
+                        <span class="input-info-label">Point Type</span>
+                        <span class="input-info-value">Traverse points used for closure check</span>
+                    </div>
+                    <div class="input-info-item">
+                        <span class="input-info-label">Minimum Points</span>
+                        <span class="input-info-value">2 required for validation</span>
+                    </div>
+                </div>
+
+                <!-- Import Options -->
+                <div class="import-section">
+                    <button class="import-btn" onclick="openCsvModal()">
+                        📋 Paste CSV Data
+                    </button>
+                    <label class="import-btn">
+                        📁 Upload CSV File
+                        <input type="file" accept=".csv,.txt" onchange="handleFileUpload(event)">
+                    </label>
+                </div>
+
+                <!-- Data Table -->
+                <div class="table-container">
+                    <table id="pointsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px">#</th>
+                                <th style="width: 15%">Point ID</th>
+                                <th style="width: 22%">Easting (X) <span class="required">*</span></th>
+                                <th style="width: 22%">Northing (Y) <span class="required">*</span></th>
+                                <th style="width: 15%">Height (Z)</th>
+                                <th style="width: 15%">Type</th>
+                                <th style="width: 40px"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="pointsBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="button-row">
+                    <button class="btn btn-secondary" onclick="addRow()">➕ Add Row</button>
+                    <button class="btn btn-secondary" onclick="addMultipleRows()">➕ Add 5 Rows</button>
+                </div>
+            </div>
         </div>
 
-        <table id="pointsTable">
-            <thead>
-                <tr>
-                    <th style="width: 15%">Point Name</th>
-                    <th style="width: 22%">Easting (X)</th>
-                    <th style="width: 22%">Northing (Y)</th>
-                    <th style="width: 18%">Height</th>
-                    <th style="width: 18%">Type</th>
-                    <th style="width: 5%"></th>
-                </tr>
-            </thead>
-            <tbody id="pointsBody">
-            </tbody>
-        </table>
+        <!-- Assumptions Accordion -->
+        <div class="accordion" id="assumptionsAccordion">
+            <div class="accordion-header" onclick="toggleAccordion('assumptionsAccordion')">
+                <div class="accordion-title">
+                    <span>⚙️</span>
+                    Assumptions & Limitations
+                </div>
+                <span class="accordion-icon">▼</span>
+            </div>
+            <div class="accordion-content">
+                <ul class="assumptions-list">
+                    <li>Coordinates must be in a <strong>projected coordinate system</strong> (meters). Geographic coordinates (lat/lon) are not supported.</li>
+                    <li>Traverse closure check assumes points are <strong>entered in sequential order</strong> along the traverse path.</li>
+                    <li>Outlier detection uses a <strong>3-sigma threshold</strong> from the centroid. Adjust expectations for elongated surveys.</li>
+                    <li>Duplicate threshold is <strong>1mm</strong>; near-duplicate threshold is <strong>1cm</strong>.</li>
+                    <li>Traverse precision ratings follow typical survey standards: Good ≥1:10000, Acceptable ≥1:5000.</li>
+                </ul>
+            </div>
+        </div>
 
-        <div class="button-row">
-            <button class="btn btn-add" onclick="addRow()">➕ Add Point</button>
-            <button class="btn btn-sample" onclick="loadSample()">📝 Load Example Data</button>
-            <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
+        <!-- Validate CTA -->
+        <div class="cta-section">
+            <button class="btn btn-primary btn-validate" onclick="validate()" id="validateBtn">
+                🔍 Validate Survey Data
+            </button>
+            <div class="validation-errors" id="validationErrors"></div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="results">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-title-icon">📊</div>
+                        Validation Report
+                    </div>
+                    <span id="reportTimestamp" style="color: var(--text-muted); font-size: 13px;"></span>
+                </div>
+                <div class="card-body" id="resultsContent">
+                </div>
+            </div>
         </div>
     </div>
 
-    <div style="text-align: center; margin-bottom: 20px;">
-        <button class="btn btn-primary" onclick="validate()" style="font-size: 20px; padding: 18px 50px;">
-            ✓ Check My Data
-        </button>
+    <!-- CSV Paste Modal -->
+    <div class="modal-overlay" id="csvModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">📋 Paste CSV Data</div>
+                <button class="modal-close" onclick="closeCsvModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="csvInput" placeholder="Paste your CSV data here...
+
+Example format:
+PointID,Easting,Northing,Height,Type
+BM1,500000.000,6000000.000,100.5,control
+T1,500050.123,6000025.456,101.2,traverse
+T2,500100.789,6000050.321,102.1,traverse"></textarea>
+                <div class="csv-help">
+                    <strong>Accepted formats:</strong> CSV with headers (PointID, Easting, Northing, Height, Type) or tab-separated values. Height and Type columns are optional.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCsvModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="parseCsvInput()">Import Data</button>
+            </div>
+        </div>
     </div>
 
-    <div id="results" class="card results">
-        <h2>📊 Results</h2>
-        <div id="resultsContent"></div>
-    </div>
+    <!-- Footer -->
+    <footer class="footer">
+        <p>SurveyValidator — Professional Survey Data QC Engine</p>
+        <p style="margin-top: 8px;">Built with Go • Deployed on Vercel • Processing time typically &lt;50ms</p>
+    </footer>
 
     <script>
         let rowCount = 0;
+        let lastResult = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            addRow(); addRow(); addRow();
+        });
 
         function addRow(pointId = '', easting = '', northing = '', height = '', type = 'traverse') {
             const tbody = document.getElementById('pointsBody');
+            const rowNum = tbody.children.length + 1;
             const row = document.createElement('tr');
             row.id = 'row_' + rowCount;
+            row.dataset.rowNum = rowNum;
+            
             row.innerHTML = `
-                <td><input type="text" placeholder="e.g. P1" value="${pointId}"></td>
-                <td><input type="number" step="0.001" placeholder="500000.000" value="${easting}"></td>
-                <td><input type="number" step="0.001" placeholder="6000000.000" value="${northing}"></td>
-                <td><input type="number" step="0.001" placeholder="100.00" value="${height}"></td>
+                <td class="row-number">${rowNum}</td>
+                <td><input type="text" placeholder="P${rowNum}" value="${pointId}" data-field="pointId" onchange="validateRow(this)"></td>
+                <td><input type="number" step="0.001" placeholder="500000.000" value="${easting}" data-field="easting" onchange="validateRow(this)" required></td>
+                <td><input type="number" step="0.001" placeholder="6000000.000" value="${northing}" data-field="northing" onchange="validateRow(this)" required></td>
+                <td><input type="number" step="0.001" placeholder="Optional" value="${height}" data-field="height"></td>
                 <td>
-                    <select>
+                    <select data-field="type">
                         <option value="traverse" ${type === 'traverse' ? 'selected' : ''}>Traverse</option>
                         <option value="control" ${type === 'control' ? 'selected' : ''}>Control</option>
                         <option value="detail" ${type === 'detail' ? 'selected' : ''}>Detail</option>
                     </select>
                 </td>
-                <td><button class="delete-btn" onclick="deleteRow('row_${rowCount}')">✕</button></td>
+                <td><button class="delete-btn" onclick="deleteRow('row_${rowCount}')" title="Delete row">✕</button></td>
             `;
             tbody.appendChild(row);
             rowCount++;
+            updateRowNumbers();
+        }
+
+        function addMultipleRows() {
+            for (let i = 0; i < 5; i++) addRow();
         }
 
         function deleteRow(id) {
-            document.getElementById(id).remove();
+            const row = document.getElementById(id);
+            if (row) {
+                row.remove();
+                updateRowNumbers();
+            }
+        }
+
+        function updateRowNumbers() {
+            const rows = document.querySelectorAll('#pointsBody tr');
+            rows.forEach((row, index) => {
+                const numCell = row.querySelector('.row-number');
+                if (numCell) numCell.textContent = index + 1;
+                
+                const pointIdInput = row.querySelector('[data-field="pointId"]');
+                if (pointIdInput) pointIdInput.placeholder = `P${index + 1}`;
+            });
+        }
+
+        function validateRow(input) {
+            const row = input.closest('tr');
+            const field = input.dataset.field;
+            const value = input.value.trim();
+            
+            input.classList.remove('input-error');
+            row.classList.remove('error-row');
+            
+            if ((field === 'easting' || field === 'northing') && value !== '') {
+                const num = parseFloat(value);
+                if (isNaN(num)) {
+                    input.classList.add('input-error');
+                    row.classList.add('error-row');
+                }
+            }
+            
+            clearValidationErrors();
         }
 
         function clearAll() {
             document.getElementById('pointsBody').innerHTML = '';
             document.getElementById('results').classList.remove('show');
+            document.getElementById('validationErrors').textContent = '';
             rowCount = 0;
+            lastResult = null;
             addRow(); addRow(); addRow();
         }
 
         function loadSample() {
             document.getElementById('pointsBody').innerHTML = '';
+            document.getElementById('results').classList.remove('show');
             rowCount = 0;
             
             const sampleData = [
-                { id: 'BM1', e: 500000.000, n: 6000000.000, h: 100.5, t: 'control' },
-                { id: 'T1', e: 500050.123, n: 6000025.456, h: 101.2, t: 'traverse' },
-                { id: 'T2', e: 500100.789, n: 6000050.321, h: 102.1, t: 'traverse' },
-                { id: 'T3', e: 500150.456, n: 6000025.789, h: 101.8, t: 'traverse' },
-                { id: 'T4', e: 500100.100, n: 6000000.100, h: 100.9, t: 'traverse' },
-                { id: 'BM2', e: 500200.000, n: 6000100.000, h: 103.0, t: 'control' },
+                { id: 'BM1', e: 500000.000, n: 6000000.000, h: 100.50, t: 'control' },
+                { id: 'T1', e: 500050.123, n: 6000025.456, h: 101.20, t: 'traverse' },
+                { id: 'T2', e: 500100.789, n: 6000050.321, h: 102.10, t: 'traverse' },
+                { id: 'T3', e: 500150.456, n: 6000025.789, h: 101.80, t: 'traverse' },
+                { id: 'T4', e: 500100.100, n: 6000000.100, h: 100.90, t: 'traverse' },
+                { id: 'BM2', e: 500200.000, n: 6000100.000, h: 103.00, t: 'control' },
             ];
             
             sampleData.forEach(p => addRow(p.id, p.e, p.n, p.h, p.t));
@@ -375,44 +1194,100 @@
         function getPoints() {
             const rows = document.querySelectorAll('#pointsBody tr');
             const points = [];
+            const errors = [];
             
-            rows.forEach(row => {
+            rows.forEach((row, index) => {
                 const inputs = row.querySelectorAll('input');
                 const select = row.querySelector('select');
                 
-                const pointId = inputs[0].value.trim();
-                const easting = parseFloat(inputs[1].value);
-                const northing = parseFloat(inputs[2].value);
-                const height = inputs[3].value ? parseFloat(inputs[3].value) : null;
+                let pointId = inputs[0].value.trim();
+                const eastingStr = inputs[1].value.trim();
+                const northingStr = inputs[2].value.trim();
+                const heightStr = inputs[3].value.trim();
                 const surveyType = select.value;
                 
-                if (pointId && !isNaN(easting) && !isNaN(northing)) {
+                if (!pointId && !eastingStr && !northingStr) {
+                    return;
+                }
+                
+                if (!pointId && (eastingStr || northingStr)) {
+                    pointId = `P${index + 1}`;
+                }
+                
+                const easting = parseFloat(eastingStr);
+                const northing = parseFloat(northingStr);
+                const height = heightStr ? parseFloat(heightStr) : null;
+                
+                let hasError = false;
+                
+                if (eastingStr && isNaN(easting)) {
+                    errors.push(`Row ${index + 1}: Easting must be a valid number`);
+                    inputs[1].classList.add('input-error');
+                    row.classList.add('error-row');
+                    hasError = true;
+                }
+                
+                if (northingStr && isNaN(northing)) {
+                    errors.push(`Row ${index + 1}: Northing must be a valid number`);
+                    inputs[2].classList.add('input-error');
+                    row.classList.add('error-row');
+                    hasError = true;
+                }
+                
+                if (!eastingStr || !northingStr) {
+                    if (pointId || eastingStr || northingStr) {
+                        errors.push(`Row ${index + 1}: Easting and Northing are required`);
+                        if (!eastingStr) inputs[1].classList.add('input-error');
+                        if (!northingStr) inputs[2].classList.add('input-error');
+                        row.classList.add('error-row');
+                        hasError = true;
+                    }
+                }
+                
+                if (!hasError && pointId && !isNaN(easting) && !isNaN(northing)) {
                     const point = {
                         point_id: pointId,
                         easting: easting,
                         northing: northing,
                         survey_type: surveyType
                     };
-                    if (height !== null) {
+                    if (height !== null && !isNaN(height)) {
                         point.height = height;
                     }
                     points.push(point);
                 }
             });
             
-            return points;
+            return { points, errors };
+        }
+
+        function clearValidationErrors() {
+            document.getElementById('validationErrors').textContent = '';
+            document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+            document.querySelectorAll('.error-row').forEach(el => el.classList.remove('error-row'));
         }
 
         async function validate() {
-            const points = getPoints();
+            clearValidationErrors();
+            
+            const { points, errors } = getPoints();
+            
+            if (errors.length > 0) {
+                document.getElementById('validationErrors').innerHTML = errors.map(e => `⚠️ ${e}`).join('<br>');
+                return;
+            }
             
             if (points.length < 2) {
-                alert('Please enter at least 2 complete points (Point Name, Easting, and Northing are required).');
+                document.getElementById('validationErrors').textContent = '⚠️ Please enter at least 2 complete points with Easting and Northing values.';
                 return;
             }
 
+            const btn = document.getElementById('validateBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Validating...';
+
             const data = {
-                project_id: 'Survey-' + new Date().toISOString().slice(0,10),
+                project_id: 'Survey-' + new Date().toISOString().slice(0, 10),
                 points: points
             };
 
@@ -424,9 +1299,13 @@
                 });
 
                 const result = await response.json();
+                lastResult = result;
                 showResults(result);
             } catch (e) {
-                alert('Error connecting to server: ' + e.message);
+                document.getElementById('validationErrors').textContent = '❌ Error connecting to server: ' + e.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 Validate Survey Data';
             }
         }
 
@@ -434,58 +1313,315 @@
             const container = document.getElementById('resultsContent');
             const resultsDiv = document.getElementById('results');
             
-            const statusMessages = {
-                PASS: { emoji: '✅', text: 'All Good!', subtitle: 'No problems found in your survey data.' },
-                WARNING: { emoji: '⚠️', text: 'Some Issues Found', subtitle: 'Please review the items below.' },
-                FAIL: { emoji: '❌', text: 'Problems Detected', subtitle: 'Your data has errors that need fixing.' }
+            document.getElementById('reportTimestamp').textContent = 
+                `Generated: ${new Date(result.timestamp).toLocaleString()}`;
+            
+            const errorCount = result.issues.filter(i => i.severity === 'error').length;
+            const warningCount = result.issues.filter(i => i.severity === 'warning').length;
+            const infoCount = result.issues.filter(i => i.severity === 'info').length;
+            
+            const statusConfig = {
+                PASS: { 
+                    icon: '✅', 
+                    title: 'All Checks Passed', 
+                    subtitle: 'Your survey data meets all quality standards.',
+                    class: 'pass'
+                },
+                WARNING: { 
+                    icon: '⚠️', 
+                    title: 'Review Recommended', 
+                    subtitle: 'Some issues were detected that may need attention.',
+                    class: 'warning'
+                },
+                FAIL: { 
+                    icon: '❌', 
+                    title: 'Issues Detected', 
+                    subtitle: 'Critical errors found that require correction.',
+                    class: 'fail'
+                }
             };
             
-            const status = statusMessages[result.status];
+            const status = statusConfig[result.status];
             
             let html = `
-                <div class="status-box ${result.status.toLowerCase()}">
-                    <div class="status-text">${status.emoji} ${status.text}</div>
-                    <div class="status-subtitle">${status.subtitle}</div>
+                <div class="status-banner ${status.class}">
+                    <div class="status-icon">${status.icon}</div>
+                    <div class="status-content">
+                        <div class="status-title">${status.title}</div>
+                        <div class="status-subtitle">${status.subtitle}</div>
+                    </div>
                 </div>
                 
-                <div class="stats-row">
-                    <div class="stat-box">
-                        <div class="stat-number">${result.confidence_score}%</div>
-                        <div class="stat-label">Data Quality Score</div>
+                <div class="stats-grid">
+                    <div class="stat-card score">
+                        <div class="stat-value">${result.confidence_score}%</div>
+                        <div class="stat-label">Confidence Score</div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-number">${result.summary.total_points}</div>
-                        <div class="stat-label">Points Checked</div>
+                    <div class="stat-card error">
+                        <div class="stat-value">${errorCount}</div>
+                        <div class="stat-label">Errors</div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-number">${result.issues.length}</div>
-                        <div class="stat-label">Issues Found</div>
+                    <div class="stat-card warning">
+                        <div class="stat-value">${warningCount}</div>
+                        <div class="stat-label">Warnings</div>
                     </div>
+                    <div class="stat-card info">
+                        <div class="stat-value">${infoCount}</div>
+                        <div class="stat-label">Info</div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 8px; font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Checks Performed</div>
+                <div class="checks-performed">
+                    ${result.checks_performed.map(check => 
+                        `<span class="check-tag">${formatCheckName(check)}</span>`
+                    ).join('')}
                 </div>
             `;
             
             if (result.issues.length === 0) {
-                html += `<div class="no-issues">✅ Great job! Your survey data passed all checks.</div>`;
+                html += `
+                    <div class="no-issues">
+                        <div class="no-issues-icon">🎉</div>
+                        <div class="no-issues-title">Excellent Work!</div>
+                        <div class="no-issues-subtitle">Your survey data passed all ${result.checks_performed.length} quality checks with no issues detected.</div>
+                    </div>
+                `;
             } else {
-                html += `<h3>Issues to Review:</h3>`;
-                result.issues.forEach(issue => {
-                    const severityClass = issue.severity === 'error' ? '' : issue.severity;
-                    html += `
-                        <div class="issue-card ${severityClass}">
-                            <div class="issue-title">${issue.description}</div>
-                            ${issue.point_ids ? `<div class="issue-points">📍 Points: ${issue.point_ids.join(', ')}</div>` : ''}
-                        </div>
-                    `;
-                });
+                html += `
+                    <div style="margin-bottom: 8px; font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Issues Found (${result.issues.length})</div>
+                    <table class="issues-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 100px">Severity</th>
+                                <th style="width: 120px">Check</th>
+                                <th style="width: 120px">Point(s)</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${result.issues.map(issue => `
+                                <tr>
+                                    <td>
+                                        <span class="severity-badge ${issue.severity}">
+                                            ${getSeverityIcon(issue.severity)} ${issue.severity}
+                                        </span>
+                                    </td>
+                                    <td style="color: var(--text-secondary); font-size: 13px;">
+                                        ${formatCheckName(issue.check_name)}
+                                    </td>
+                                    <td>
+                                        <div class="issue-points">
+                                            ${issue.point_ids ? issue.point_ids.map(p => 
+                                                `<span class="point-tag">${p}</span>`
+                                            ).join('') : '—'}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="issue-message">${issue.description}</div>
+                                        <div class="issue-fix">${getSuggestedFix(issue)}</div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
             }
+            
+            html += `
+                <div style="margin-top: 24px; padding: 16px; background: var(--bg-input); border-radius: 8px;">
+                    <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px;">Survey Summary</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; font-size: 14px;">
+                        <div><span style="color: var(--text-muted);">Total Points:</span> <strong>${result.summary.total_points}</strong></div>
+                        <div><span style="color: var(--text-muted);">Traverse:</span> <strong>${result.summary.traverse_points}</strong></div>
+                        <div><span style="color: var(--text-muted);">Control:</span> <strong>${result.summary.control_points}</strong></div>
+                        <div><span style="color: var(--text-muted);">Detail:</span> <strong>${result.summary.detail_points}</strong></div>
+                        <div><span style="color: var(--text-muted);">With Height:</span> <strong>${result.summary.points_with_height}</strong></div>
+                        <div><span style="color: var(--text-muted);">Processing:</span> <strong>${result.processing_time}</strong></div>
+                    </div>
+                </div>
+            `;
+            
+            html += `
+                <div class="export-section">
+                    <button class="btn btn-success" onclick="downloadJSON()">
+                        📥 Download Report (JSON)
+                    </button>
+                    <button class="btn btn-secondary" onclick="downloadCSV()">
+                        📄 Export Issues (CSV)
+                    </button>
+                    <button class="btn btn-secondary" onclick="copyReport()">
+                        📋 Copy to Clipboard
+                    </button>
+                </div>
+            `;
             
             container.innerHTML = html;
             resultsDiv.classList.add('show');
             resultsDiv.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Initialize with empty rows
-        addRow(); addRow(); addRow();
+        function formatCheckName(name) {
+            return name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+
+        function getSeverityIcon(severity) {
+            const icons = { error: '🔴', warning: '🟡', info: '🔵' };
+            return icons[severity] || '';
+        }
+
+        function getSuggestedFix(issue) {
+            const fixes = {
+                'duplicate_detection': 'Consider removing one of the duplicate points or verify coordinates.',
+                'input_validation': 'Review and correct the input data for this point.',
+                'outlier_detection': 'Verify this point is in the correct location.',
+                'distance_bearing_check': 'Check traverse geometry and point order.',
+                'traverse_closure': 'Review traverse measurements for blunders.'
+            };
+            return fixes[issue.check_name] || 'Review this issue and correct as needed.';
+        }
+
+        function downloadJSON() {
+            if (!lastResult) return;
+            const blob = new Blob([JSON.stringify(lastResult, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `survey-validation-report-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadCSV() {
+            if (!lastResult || lastResult.issues.length === 0) {
+                alert('No issues to export.');
+                return;
+            }
+            
+            let csv = 'Severity,Check,Points,Description\n';
+            lastResult.issues.forEach(issue => {
+                const points = issue.point_ids ? issue.point_ids.join('; ') : '';
+                const desc = issue.description.replace(/"/g, '""');
+                csv += `"${issue.severity}","${issue.check_name}","${points}","${desc}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `survey-issues-${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function copyReport() {
+            if (!lastResult) return;
+            
+            let text = `SURVEY VALIDATION REPORT\n`;
+            text += `========================\n\n`;
+            text += `Project: ${lastResult.project_id}\n`;
+            text += `Status: ${lastResult.status}\n`;
+            text += `Confidence Score: ${lastResult.confidence_score}%\n`;
+            text += `Points Checked: ${lastResult.summary.total_points}\n`;
+            text += `Issues Found: ${lastResult.issues.length}\n\n`;
+            
+            if (lastResult.issues.length > 0) {
+                text += `ISSUES:\n`;
+                lastResult.issues.forEach((issue, i) => {
+                    text += `${i + 1}. [${issue.severity.toUpperCase()}] ${issue.description}\n`;
+                    if (issue.point_ids) text += `   Points: ${issue.point_ids.join(', ')}\n`;
+                });
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Report copied to clipboard!');
+            });
+        }
+
+        function openCsvModal() {
+            document.getElementById('csvModal').classList.add('show');
+            document.getElementById('csvInput').value = '';
+            document.getElementById('csvInput').focus();
+        }
+
+        function closeCsvModal() {
+            document.getElementById('csvModal').classList.remove('show');
+        }
+
+        function parseCsvInput() {
+            const input = document.getElementById('csvInput').value.trim();
+            if (!input) {
+                alert('Please paste CSV data first.');
+                return;
+            }
+            
+            const lines = input.split('\n').filter(line => line.trim());
+            if (lines.length < 2) {
+                alert('Please include at least a header row and one data row.');
+                return;
+            }
+            
+            const delimiter = lines[0].includes('\t') ? '\t' : ',';
+            const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
+            
+            const pointIdIdx = headers.findIndex(h => h.includes('point') || h.includes('id') || h.includes('name'));
+            const eastingIdx = headers.findIndex(h => h.includes('east') || h.includes('x') || h === 'e');
+            const northingIdx = headers.findIndex(h => h.includes('north') || h.includes('y') || h === 'n');
+            const heightIdx = headers.findIndex(h => h.includes('height') || h.includes('z') || h.includes('elev'));
+            const typeIdx = headers.findIndex(h => h.includes('type'));
+            
+            if (eastingIdx === -1 || northingIdx === -1) {
+                alert('Could not identify Easting and Northing columns. Please ensure your CSV has headers containing "Easting"/"X" and "Northing"/"Y".');
+                return;
+            }
+            
+            document.getElementById('pointsBody').innerHTML = '';
+            rowCount = 0;
+            
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(delimiter).map(v => v.trim().replace(/^["']|["']$/g, ''));
+                
+                const pointId = pointIdIdx >= 0 ? values[pointIdIdx] : '';
+                const easting = values[eastingIdx] || '';
+                const northing = values[northingIdx] || '';
+                const height = heightIdx >= 0 ? values[heightIdx] : '';
+                let type = typeIdx >= 0 ? values[typeIdx].toLowerCase() : 'traverse';
+                
+                if (!['traverse', 'control', 'detail'].includes(type)) {
+                    type = 'traverse';
+                }
+                
+                addRow(pointId, easting, northing, height, type);
+            }
+            
+            closeCsvModal();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('csvInput').value = e.target.result;
+                document.getElementById('csvModal').classList.add('show');
+            };
+            reader.readAsText(file);
+            
+            event.target.value = '';
+        }
+
+        function toggleAccordion(id) {
+            document.getElementById(id).classList.toggle('open');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeCsvModal();
+        });
+
+        document.getElementById('csvModal').addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) closeCsvModal();
+        });
     </script>
 </body>
 </html>
