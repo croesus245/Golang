@@ -1,0 +1,64 @@
+{
+  "project_id": "SURVEY-002-ERRORS",
+  "coordinate_system": "UTM Zone 36N",
+  "points": [
+    {
+      "point_id": "CP1",
+      "easting": 500000.000,
+      "northing": 6000000.000,
+      "height": 100.500,
+      "survey_type": "control"
+    },
+    {
+      "point_id": "T1",
+      "easting": 500050.123,
+      "northing": 6000025.456,
+      "height": 101.200,
+      "survey_type": "traverse"
+    },
+    {
+      "point_id": "T1_DUP",
+      "easting": 500050.124,
+      "northing": 6000025.457,
+      "height": 101.200,
+      "survey_type": "traverse",
+      "_comment": "Near-duplicate of T1"
+    },
+    {
+      "point_id": "T2",
+      "easting": 500100.789,
+      "northing": 6000050.321,
+      "height": 102.100,
+      "survey_type": "traverse"
+    },
+    {
+      "point_id": "OUTLIER",
+      "easting": 510000.000,
+      "northing": 6010000.000,
+      "height": 500.000,
+      "survey_type": "detail",
+      "_comment": "Intentional outlier - far from other points"
+    },
+    {
+      "point_id": "T3",
+      "easting": 500150.456,
+      "northing": 6000025.789,
+      "height": 101.800,
+      "survey_type": "traverse"
+    },
+    {
+      "point_id": "T4",
+      "easting": 500100.100,
+      "northing": 6000000.100,
+      "height": 100.900,
+      "survey_type": "traverse"
+    },
+    {
+      "point_id": "ZERO_POINT",
+      "easting": 0,
+      "northing": 0,
+      "survey_type": "detail",
+      "_comment": "Zero coordinates - data entry error"
+    }
+  ]
+}

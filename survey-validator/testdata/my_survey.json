@@ -1,0 +1,27 @@
+{
+  "project_id": "MY-SURVEY-001",
+  "coordinate_system": "UTM Zone 36N",
+  "points": [
+    {
+      "point_id": "P1",
+      "easting": 500000.000,
+      "northing": 6000000.000,
+      "height": 100.0,
+      "survey_type": "traverse"
+    },
+    {
+      "point_id": "P2",
+      "easting": 500050.000,
+      "northing": 6000030.000,
+      "height": 101.5,
+      "survey_type": "traverse"
+    },
+    {
+      "point_id": "P3",
+      "easting": 500100.000,
+      "northing": 6000060.000,
+      "height": 102.0,
+      "survey_type": "traverse"
+    }
+  ]
+}
