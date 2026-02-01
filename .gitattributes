@@ -1,0 +1,3 @@
+# Exclude frontend files from GitHub language statistics
+survey-validator/public/* linguist-vendored
+survey-validator/static/* linguist-vendored
