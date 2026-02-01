@@ -427,246 +427,112 @@
             display: block;
         }
 
-        .status-bar {
+        .report-header {
             display: flex;
-            align-items: center;
-            gap: 16px;
-            padding: 16px 20px;
-            border-radius: 6px;
+            justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
         }
 
-        .status-bar.pass {
-            background: var(--success-light);
-            border: 1px solid var(--success);
+        .report-status {
+            font-size: 13px;
         }
 
-        .status-bar.warning {
-            background: var(--warning-light);
-            border: 1px solid var(--warning);
-        }
-
-        .status-bar.fail {
-            background: var(--error-light);
-            border: 1px solid var(--error);
-        }
-
-        .status-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-
-        .status-bar.pass .status-icon {
-            background: var(--success);
-            color: white;
-        }
-
-        .status-bar.warning .status-icon {
-            background: var(--warning);
-            color: white;
-        }
-
-        .status-bar.fail .status-icon {
-            background: var(--error);
-            color: white;
-        }
-
-        .status-text h3 {
-            font-size: 15px;
-            font-weight: 600;
+        .report-status dt {
+            color: var(--text-muted);
+            font-size: 11px;
             margin-bottom: 2px;
         }
 
-        .status-bar.pass .status-text h3 { color: var(--success); }
-        .status-bar.warning .status-text h3 { color: var(--warning); }
-        .status-bar.fail .status-text h3 { color: var(--error); }
-
-        .status-text p {
-            font-size: 13px;
-            color: var(--text-secondary);
+        .report-status dd {
+            margin: 0 0 12px 0;
+            font-weight: 500;
         }
 
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
+        .report-status dd.pass { color: var(--success); }
+        .report-status dd.warning { color: var(--warning); }
+        .report-status dd.fail { color: var(--error); }
 
-        .stat-box {
-            padding: 16px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            text-align: center;
-            background: var(--bg-white);
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .stat-box.score .stat-value { color: var(--primary); }
-        .stat-box.errors .stat-value { color: var(--error); }
-        .stat-box.warnings .stat-value { color: var(--warning); }
-        .stat-box.info .stat-value { color: var(--info); }
-
-        .stat-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .report-meta {
+            text-align: right;
+            font-size: 12px;
             color: var(--text-muted);
         }
 
-        .checks-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 20px;
+        .report-meta div {
+            margin-bottom: 4px;
         }
 
-        .check-tag {
-            padding: 4px 10px;
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 8px 12px;
             background: var(--bg-muted);
             border: 1px solid var(--border);
-            border-radius: 4px;
+            font-weight: 600;
             font-size: 12px;
             color: var(--text-secondary);
         }
 
-        .section-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
+        .data-table td {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .data-table td.label {
+            background: var(--bg-muted);
+            font-weight: 500;
+            width: 140px;
+            color: var(--text-secondary);
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin: 24px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
         }
 
         .issues-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            overflow: hidden;
+            font-size: 13px;
         }
 
         .issues-table th {
             background: var(--bg-muted);
-            padding: 10px 12px;
+            padding: 8px 12px;
             text-align: left;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
-            text-transform: uppercase;
             color: var(--text-secondary);
-            border-bottom: 1px solid var(--border);
+            border: 1px solid var(--border);
         }
 
         .issues-table td {
-            padding: 12px;
-            border-bottom: 1px solid var(--border);
+            padding: 8px 12px;
+            border: 1px solid var(--border);
             vertical-align: top;
-            font-size: 13px;
         }
 
-        .issues-table tbody tr:last-child td {
-            border-bottom: none;
+        .severity-text {
+            font-weight: 500;
         }
 
-        .severity {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .severity.error {
-            background: var(--error-light);
-            color: var(--error);
-        }
-
-        .severity.warning {
-            background: var(--warning-light);
-            color: var(--warning);
-        }
-
-        .severity.info {
-            background: var(--info-light);
-            color: var(--info);
-        }
-
-        .point-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-        }
-
-        .point-tag {
-            background: var(--bg-muted);
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 11px;
-            font-family: monospace;
-        }
-
-        .issue-desc {
-            color: var(--text);
-        }
-
-        .issue-fix {
-            color: var(--text-muted);
-            font-size: 12px;
-            margin-top: 4px;
-        }
-
-        .no-issues {
-            text-align: center;
-            padding: 32px;
-            background: var(--success-light);
-            border: 1px solid var(--success);
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-
-        .no-issues h3 {
-            color: var(--success);
-            font-size: 16px;
-            margin-bottom: 4px;
-        }
-
-        .no-issues p {
-            color: var(--text-secondary);
-            font-size: 13px;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-            padding: 16px;
-            background: var(--bg-muted);
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 13px;
-        }
-
-        .summary-item span:first-child {
-            color: var(--text-muted);
-        }
-
-        .summary-item strong {
-            color: var(--text);
-        }
+        .severity-text.error { color: var(--error); }
+        .severity-text.warning { color: var(--warning); }
+        .severity-text.info { color: var(--info); }
 
         .export-row {
             display: flex;
@@ -1156,81 +1022,53 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             const warningCount = result.issues.filter(i => i.severity === 'warning').length;
             const infoCount = result.issues.filter(i => i.severity === 'info').length;
             
-            const statusMap = {
-                PASS: { icon: '✓', title: 'All Checks Passed', desc: 'No issues detected in the survey data.', cls: 'pass' },
-                WARNING: { icon: '!', title: 'Review Recommended', desc: 'Some items may need attention.', cls: 'warning' },
-                FAIL: { icon: '✕', title: 'Issues Detected', desc: 'Errors found that require correction.', cls: 'fail' }
-            };
-            
-            const status = statusMap[result.status];
+            const statusText = { PASS: 'PASS', WARNING: 'WARNING', FAIL: 'FAIL' };
+            const statusCls = { PASS: 'pass', WARNING: 'warning', FAIL: 'fail' };
             
             let html = `
-                <div class="status-bar ${status.cls}">
-                    <div class="status-icon">${status.icon}</div>
-                    <div class="status-text">
-                        <h3>${status.title}</h3>
-                        <p>${status.desc}</p>
+                <div class="report-header">
+                    <dl class="report-status">
+                        <dt>Result</dt>
+                        <dd class="${statusCls[result.status]}">${statusText[result.status]}</dd>
+                        <dt>Confidence Score</dt>
+                        <dd>${result.confidence_score}%</dd>
+                    </dl>
+                    <div class="report-meta">
+                        <div>Project: ${result.project_id}</div>
+                        <div>Processed: ${result.processing_time}</div>
                     </div>
                 </div>
                 
-                <div class="stats-row">
-                    <div class="stat-box score">
-                        <div class="stat-value">${result.confidence_score}%</div>
-                        <div class="stat-label">Confidence</div>
-                    </div>
-                    <div class="stat-box errors">
-                        <div class="stat-value">${errorCount}</div>
-                        <div class="stat-label">Errors</div>
-                    </div>
-                    <div class="stat-box warnings">
-                        <div class="stat-value">${warningCount}</div>
-                        <div class="stat-label">Warnings</div>
-                    </div>
-                    <div class="stat-box info">
-                        <div class="stat-value">${infoCount}</div>
-                        <div class="stat-label">Info</div>
-                    </div>
-                </div>
-                
-                <div class="section-label">Checks Performed</div>
-                <div class="checks-list">
-                    ${result.checks_performed.map(c => `<span class="check-tag">${formatCheck(c)}</span>`).join('')}
-                </div>
+                <table class="data-table">
+                    <tr><td class="label">Total Points</td><td>${result.summary.total_points}</td><td class="label">Errors</td><td>${errorCount}</td></tr>
+                    <tr><td class="label">Traverse Points</td><td>${result.summary.traverse_points}</td><td class="label">Warnings</td><td>${warningCount}</td></tr>
+                    <tr><td class="label">Control Points</td><td>${result.summary.control_points}</td><td class="label">Notices</td><td>${infoCount}</td></tr>
+                    <tr><td class="label">Detail Points</td><td>${result.summary.detail_points}</td><td class="label">Checks Run</td><td>${result.checks_performed.length}</td></tr>
+                </table>
             `;
             
+            html += `<div class="section-title">Issues (${result.issues.length})</div>`;
+            
             if (result.issues.length === 0) {
-                html += `
-                    <div class="no-issues">
-                        <h3>No Issues Found</h3>
-                        <p>All ${result.checks_performed.length} quality checks passed successfully.</p>
-                    </div>
-                `;
+                html += `<p style="color:var(--text-secondary);margin-bottom:20px;">No issues detected.</p>`;
             } else {
                 html += `
-                    <div class="section-label">Issues (${result.issues.length})</div>
                     <table class="issues-table">
                         <thead>
                             <tr>
-                                <th style="width:90px">Severity</th>
-                                <th style="width:120px">Check</th>
-                                <th style="width:100px">Points</th>
+                                <th>Severity</th>
+                                <th>Check</th>
+                                <th>Points</th>
                                 <th>Description</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${result.issues.map(issue => `
                                 <tr>
-                                    <td><span class="severity ${issue.severity}">${issue.severity}</span></td>
-                                    <td style="color:var(--text-secondary);">${formatCheck(issue.check_name)}</td>
-                                    <td>
-                                        <div class="point-tags">
-                                            ${issue.point_ids ? issue.point_ids.map(p => `<span class="point-tag">${p}</span>`).join('') : '—'}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="issue-desc">${issue.description}</div>
-                                        <div class="issue-fix">${getSuggestedFix(issue)}</div>
-                                    </td>
+                                    <td><span class="severity-text ${issue.severity}">${issue.severity.toUpperCase()}</span></td>
+                                    <td>${formatCheck(issue.check_name)}</td>
+                                    <td>${issue.point_ids ? issue.point_ids.join(', ') : '-'}</td>
+                                    <td>${issue.description}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1239,20 +1077,13 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             }
             
             html += `
-                <div class="section-label">Summary</div>
-                <div class="summary-grid">
-                    <div class="summary-item"><span>Total Points:</span> <strong>${result.summary.total_points}</strong></div>
-                    <div class="summary-item"><span>Traverse:</span> <strong>${result.summary.traverse_points}</strong></div>
-                    <div class="summary-item"><span>Control:</span> <strong>${result.summary.control_points}</strong></div>
-                    <div class="summary-item"><span>Detail:</span> <strong>${result.summary.detail_points}</strong></div>
-                    <div class="summary-item"><span>With Height:</span> <strong>${result.summary.points_with_height}</strong></div>
-                    <div class="summary-item"><span>Processing:</span> <strong>${result.processing_time}</strong></div>
-                </div>
+                <div class="section-title">Checks Performed</div>
+                <p style="margin-bottom:20px;">${result.checks_performed.map(c => formatCheck(c)).join(', ')}</p>
                 
                 <div class="export-row">
-                    <button class="btn btn-success" onclick="downloadJSON()">Download JSON</button>
+                    <button class="btn" onclick="downloadJSON()">Download JSON</button>
                     <button class="btn" onclick="downloadCSV()">Export CSV</button>
-                    <button class="btn" onclick="copyReport()">Copy to Clipboard</button>
+                    <button class="btn" onclick="copyReport()">Copy</button>
                 </div>
             `;
             
