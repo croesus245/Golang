@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey Data Validator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+        }
+        h1 {
+            color: #ff8c00;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #cccccc;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .card {
+            background: #2d2d2d;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        h2 {
+            margin-top: 0;
+            color: #ff8c00;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .help-text {
+            background: #3d3d3d;
+            border-left: 4px solid #ff8c00;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 0 8px 8px 0;
+            color: #e0e0e0;
+        }
+        
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th {
+            background: #ff8c00;
+            color: #1a1a1a;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        th:first-child { border-radius: 8px 0 0 0; }
+        th:last-child { border-radius: 0 8px 0 0; }
+        td {
+            padding: 4px;
+            border-bottom: 1px solid #444;
+        }
+        tr:hover {
+            background: #3d3d3d;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #444;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        input:focus {
+            outline: none;
+            border-color: #ff8c00;
+            background: #2d2d2d;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #444;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .delete-btn {
+            background: #fc8181;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .delete-btn:hover {
+            background: #f56565;
+        }
+        
+        /* Buttons */
+        .button-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #ff8c00;
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: #cc7000;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #444;
+            color: #e0e0e0;
+        }
+        .btn-secondary:hover {
+            background: #555;
+        }
+        .btn-add {
+            background: #ff6600;
+            color: #1a1a1a;
+        }
+        .btn-add:hover {
+            background: #cc5200;
+        }
+        .btn-sample {
+            background: #b35900;
+            color: #e0e0e0;
+        }
+        .btn-sample:hover {
+            background: #994d00;
+        }
+        
+        /* Results */
+        .results {
+            display: none;
+        }
+        .results.show {
+            display: block;
+        }
+        .status-box {
+            text-align: center;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .status-box.pass {
+            background: linear-gradient(135deg, #2d4a2d, #1a3d1a);
+            color: #90ee90;
+        }
+        .status-box.warning {
+            background: linear-gradient(135deg, #4a3d1a, #3d3020);
+            color: #ffd700;
+        }
+        .status-box.fail {
+            background: linear-gradient(135deg, #4a2020, #3d1a1a);
+            color: #ff6b6b;
+        }
+        .status-text {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status-subtitle {
+            font-size: 18px;
+        }
+        
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background: #3d3d3d;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ff8c00;
+        }
+        .stat-label {
+            color: #aaa;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .issue-card {
+            background: #3d2020;
+            border-left: 4px solid #fc8181;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 0 8px 8px 0;
+        }
+        .issue-card.warning {
+            background: #3d3020;
+            border-color: #ff8c00;
+        }
+        .issue-card.info {
+            background: #203040;
+            border-color: #4299e1;
+        }
+        .issue-title {
+            font-weight: 600;
+            color: #fc8181;
+            margin-bottom: 5px;
+        }
+        .issue-card.warning .issue-title {
+            color: #ff8c00;
+        }
+        .issue-card.info .issue-title {
+            color: #63b3ed;
+        }
+        .issue-points {
+            font-size: 13px;
+            color: #aaa;
+        }
+        
+        .no-issues {
+            text-align: center;
+            padding: 30px;
+            background: #2d4a2d;
+            border-radius: 10px;
+            color: #90ee90;
+            font-size: 18px;
+        }
+        
+        .hidden { display: none; }
+        
+        @media (max-width: 600px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+            .button-row {
+                flex-direction: column;
+            }
+            th, td {
+                padding: 6px 4px;
+                font-size: 12px;
+            }
+            input, select {
+                padding: 8px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1> Survey Data Validator</h1>
+    <p class="subtitle">Check your survey coordinates for errors - fast and easy</p>
+
+    <div class="card">
+        <h2> Enter Your Survey Points</h2>
+        
+        <div class="help-text">
+            <strong>How to use:</strong> Enter your survey points in the table below, just like in your field book. 
+            Then click the green <strong>"Check My Data"</strong> button.
+        </div>
+
+        <table id="pointsTable">
+            <thead>
+                <tr>
+                    <th style="width: 15%">Point Name</th>
+                    <th style="width: 22%">Easting (X)</th>
+                    <th style="width: 22%">Northing (Y)</th>
+                    <th style="width: 18%">Height</th>
+                    <th style="width: 18%">Type</th>
+                    <th style="width: 5%"></th>
+                </tr>
+            </thead>
+            <tbody id="pointsBody">
+            </tbody>
+        </table>
+
+        <div class="button-row">
+            <button class="btn btn-add" onclick="addRow()">➕ Add Point</button>
+            <button class="btn btn-sample" onclick="loadSample()">📝 Load Example Data</button>
+            <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button class="btn btn-primary" onclick="validate()" style="font-size: 20px; padding: 18px 50px;">
+            ✓ Check My Data
+        </button>
+    </div>
+
+    <div id="results" class="card results">
+        <h2>📊 Results</h2>
+        <div id="resultsContent"></div>
+    </div>
+
+    <script>
+        let rowCount = 0;
+
+        function addRow(pointId = '', easting = '', northing = '', height = '', type = 'traverse') {
+            const tbody = document.getElementById('pointsBody');
+            const row = document.createElement('tr');
+            row.id = 'row_' + rowCount;
+            row.innerHTML = `
+                <td><input type="text" placeholder="e.g. P1" value="${pointId}"></td>
+                <td><input type="number" step="0.001" placeholder="500000.000" value="${easting}"></td>
+                <td><input type="number" step="0.001" placeholder="6000000.000" value="${northing}"></td>
+                <td><input type="number" step="0.001" placeholder="100.00" value="${height}"></td>
+                <td>
+                    <select>
+                        <option value="traverse" ${type === 'traverse' ? 'selected' : ''}>Traverse</option>
+                        <option value="control" ${type === 'control' ? 'selected' : ''}>Control</option>
+                        <option value="detail" ${type === 'detail' ? 'selected' : ''}>Detail</option>
+                    </select>
+                </td>
+                <td><button class="delete-btn" onclick="deleteRow('row_${rowCount}')">✕</button></td>
+            `;
+            tbody.appendChild(row);
+            rowCount++;
+        }
+
+        function deleteRow(id) {
+            document.getElementById(id).remove();
+        }
+
+        function clearAll() {
+            document.getElementById('pointsBody').innerHTML = '';
+            document.getElementById('results').classList.remove('show');
+            rowCount = 0;
+            addRow(); addRow(); addRow();
+        }
+
+        function loadSample() {
+            document.getElementById('pointsBody').innerHTML = '';
+            rowCount = 0;
+            
+            const sampleData = [
+                { id: 'BM1', e: 500000.000, n: 6000000.000, h: 100.5, t: 'control' },
+                { id: 'T1', e: 500050.123, n: 6000025.456, h: 101.2, t: 'traverse' },
+                { id: 'T2', e: 500100.789, n: 6000050.321, h: 102.1, t: 'traverse' },
+                { id: 'T3', e: 500150.456, n: 6000025.789, h: 101.8, t: 'traverse' },
+                { id: 'T4', e: 500100.100, n: 6000000.100, h: 100.9, t: 'traverse' },
+                { id: 'BM2', e: 500200.000, n: 6000100.000, h: 103.0, t: 'control' },
+            ];
+            
+            sampleData.forEach(p => addRow(p.id, p.e, p.n, p.h, p.t));
+        }
+
+        function getPoints() {
+            const rows = document.querySelectorAll('#pointsBody tr');
+            const points = [];
+            
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const select = row.querySelector('select');
+                
+                const pointId = inputs[0].value.trim();
+                const easting = parseFloat(inputs[1].value);
+                const northing = parseFloat(inputs[2].value);
+                const height = inputs[3].value ? parseFloat(inputs[3].value) : null;
+                const surveyType = select.value;
+                
+                if (pointId && !isNaN(easting) && !isNaN(northing)) {
+                    const point = {
+                        point_id: pointId,
+                        easting: easting,
+                        northing: northing,
+                        survey_type: surveyType
+                    };
+                    if (height !== null) {
+                        point.height = height;
+                    }
+                    points.push(point);
+                }
+            });
+            
+            return points;
+        }
+
+        async function validate() {
+            const points = getPoints();
+            
+            if (points.length < 2) {
+                alert('Please enter at least 2 complete points (Point Name, Easting, and Northing are required).');
+                return;
+            }
+
+            const data = {
+                project_id: 'Survey-' + new Date().toISOString().slice(0,10),
+                points: points
+            };
+
+            try {
+                const response = await fetch('/api/v1/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                showResults(result);
+            } catch (e) {
+                alert('Error connecting to server: ' + e.message);
+            }
+        }
+
+        function showResults(result) {
+            const container = document.getElementById('resultsContent');
+            const resultsDiv = document.getElementById('results');
+            
+            const statusMessages = {
+                PASS: { emoji: '✅', text: 'All Good!', subtitle: 'No problems found in your survey data.' },
+                WARNING: { emoji: '⚠️', text: 'Some Issues Found', subtitle: 'Please review the items below.' },
+                FAIL: { emoji: '❌', text: 'Problems Detected', subtitle: 'Your data has errors that need fixing.' }
+            };
+            
+            const status = statusMessages[result.status];
+            
+            let html = `
+                <div class="status-box ${result.status.toLowerCase()}">
+                    <div class="status-text">${status.emoji} ${status.text}</div>
+                    <div class="status-subtitle">${status.subtitle}</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="stat-number">${result.confidence_score}%</div>
+                        <div class="stat-label">Data Quality Score</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${result.summary.total_points}</div>
+                        <div class="stat-label">Points Checked</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${result.issues.length}</div>
+                        <div class="stat-label">Issues Found</div>
+                    </div>
+                </div>
+            `;
+            
+            if (result.issues.length === 0) {
+                html += `<div class="no-issues">✅ Great job! Your survey data passed all checks.</div>`;
+            } else {
+                html += `<h3>Issues to Review:</h3>`;
+                result.issues.forEach(issue => {
+                    const severityClass = issue.severity === 'error' ? '' : issue.severity;
+                    html += `
+                        <div class="issue-card ${severityClass}">
+                            <div class="issue-title">${issue.description}</div>
+                            ${issue.point_ids ? `<div class="issue-points">📍 Points: ${issue.point_ids.join(', ')}</div>` : ''}
+                        </div>
+                    `;
+                });
+            }
+            
+            container.innerHTML = html;
+            resultsDiv.classList.add('show');
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initialize with empty rows
+        addRow(); addRow(); addRow();
+    </script>
+</body>
+</html>
