@@ -1,12 +1,12 @@
-package api
+package handler
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
-// HealthHandler is the Vercel serverless function handler for /health
-func HealthHandler(w http.ResponseWriter, r *http.Request) {
+// Handler is the Vercel serverless function handler for /health
+func Handler(w http.ResponseWriter, r *http.Request) {
 	// Set CORS headers
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")

@@ -2,22 +2,22 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/*.go",
+      "src": "api/validate/index.go",
       "use": "@vercel/go"
     },
     {
-      "src": "public/**",
-      "use": "@vercel/static"
+      "src": "api/health/index.go",
+      "use": "@vercel/go"
     }
   ],
   "routes": [
     {
       "src": "/api/v1/validate",
-      "dest": "/api/validate.go"
+      "dest": "/api/validate"
     },
     {
       "src": "/health",
-      "dest": "/api/health.go"
+      "dest": "/api/health"
     },
     {
       "src": "/(.*)",
