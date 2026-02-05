@@ -1,5 +1,7 @@
 package domain
 
+// traverse checks - the meat of survey validation
+
 import (
 	"fmt"
 	"math"
@@ -7,9 +9,12 @@ import (
 	"github.com/survey-validator/models"
 )
 
+// CheckDistanceAndBearing looks at consecutive traverse points
+// and flags anything weird - short legs, sudden direction changes, etc
 func CheckDistanceAndBearing(data *models.SurveyData) []models.ValidationIssue {
 	var issues []models.ValidationIssue
 
+	// grab just the traverse points, ignore control/detail
 	var traversePoints []models.SurveyPoint
 	for _, p := range data.Points {
 		if p.SurveyType == models.SurveyTypeTraverse {
@@ -17,6 +22,7 @@ func CheckDistanceAndBearing(data *models.SurveyData) []models.ValidationIssue {
 		}
 	}
 
+	// need at least 2 points to compare distances
 	if len(traversePoints) < 2 {
 		return issues
 	}
@@ -41,6 +47,7 @@ func CheckDistanceAndBearing(data *models.SurveyData) []models.ValidationIssue {
 			})
 		}
 
+		// from the second leg onwards, check bearing changes
 		if i > 1 {
 			change := BearingDifference(bearing, prevBearing)
 			if change > MaxBearingChange {
@@ -73,6 +80,8 @@ func CheckDistanceAndBearing(data *models.SurveyData) []models.ValidationIssue {
 	return issues
 }
 
+// CheckTraverseClosure - does the loop close? how well?
+// This is what surveyors actually care about most
 func CheckTraverseClosure(data *models.SurveyData) []models.ValidationIssue {
 	var issues []models.ValidationIssue
 
@@ -96,6 +105,8 @@ func CheckTraverseClosure(data *models.SurveyData) []models.ValidationIssue {
 		totalLen += Distance(&traversePoints[i-1], &traversePoints[i])
 	}
 
+	// check if this even looks like a closed loop
+	// if endpoints are >10% of total length apart, its probably not meant to close
 	if closureDist >= totalLen*0.1 {
 		return issues
 	}
@@ -104,6 +115,7 @@ func CheckTraverseClosure(data *models.SurveyData) []models.ValidationIssue {
 	miscN := last.Northing - first.Northing
 	linMisc := math.Sqrt(miscE*miscE + miscN*miscN)
 
+	// relative precision = total length / misclosure
 	var precision float64
 	if linMisc > 0 {
 		precision = totalLen / linMisc
@@ -149,6 +161,7 @@ func CheckTraverseClosure(data *models.SurveyData) []models.ValidationIssue {
 	return issues
 }
 
+// CalculateSummaryStatistics - basic stats about the dataset
 func CalculateSummaryStatistics(data *models.SurveyData) models.SummaryStatistics {
 	stats := models.SummaryStatistics{TotalPoints: len(data.Points)}
 

@@ -1,5 +1,7 @@
 package engine
 
+// engine.go - runs all validation checks concurrently
+
 import (
 	"sync"
 	"time"
@@ -19,7 +21,7 @@ func NewEngine() *Engine {
 		checks: make(map[string]ValidationCheck),
 	}
 
-	// Register all validation checks
+	// add all the checks we want to run
 	e.RegisterCheck("input_validation", domain.ValidateInput)
 	e.RegisterCheck("duplicate_detection", domain.DetectDuplicates)
 	e.RegisterCheck("distance_bearing_check", domain.CheckDistanceAndBearing)
@@ -38,6 +40,7 @@ type checkResult struct {
 	issues    []models.ValidationIssue
 }
 
+// Validate - runs all checks in parallel, collects results
 func (e *Engine) Validate(data *models.SurveyData) *models.ValidationReport {
 	startTime := time.Now()
 

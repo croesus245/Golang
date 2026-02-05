@@ -1,21 +1,26 @@
 package domain
 
+// validators.go - input checking and duplicate/outlier detection
+
 import (
 	"fmt"
 
 	"github.com/survey-validator/models"
 )
 
+// thresholds - these are what we test against
+// tweak these if the defaults are too strict/loose
 const (
-	DuplicateThreshold     = 0.001  // meters
-	NearDuplicateThreshold = 0.01   // meters
-	OutlierThreshold       = 3.0    // standard deviations
-	MaxBearingChange       = 170.0  // degrees
-	MinTraverseDistance    = 0.1    // meters
-	GoodPrecision          = 10000  // 1:10000
-	AcceptablePrecision    = 5000   // 1:5000
+	DuplicateThreshold     = 0.001 // 1mm - if closer than this, its a dup
+	NearDuplicateThreshold = 0.01  // 1cm - close enough to warn
+	OutlierThreshold       = 3.0   // 3 std devs from centroid
+	MaxBearingChange       = 170.0 // degrees - nearly a u-turn
+	MinTraverseDistance    = 0.1   // 10cm min between points
+	GoodPrecision          = 10000 // 1:10000 or better is good
+	AcceptablePrecision    = 5000  // 1:5000 is ok
 )
 
+// ValidateInput - basic sanity checks before we do anything else
 func ValidateInput(data *models.SurveyData) []models.ValidationIssue {
 	var issues []models.ValidationIssue
 
@@ -47,6 +52,7 @@ func ValidateInput(data *models.SurveyData) []models.ValidationIssue {
 			})
 		}
 
+		// check for valid survey type (if one was given)
 		switch p.SurveyType {
 		case models.SurveyTypeTraverse, models.SurveyTypeControl, models.SurveyTypeDetail:
 			// valid type
@@ -65,6 +71,7 @@ func ValidateInput(data *models.SurveyData) []models.ValidationIssue {
 	return issues
 }
 
+// DetectDuplicates - O(n²) check but n is usually small for surveys
 func DetectDuplicates(data *models.SurveyData) []models.ValidationIssue {
 	var issues []models.ValidationIssue
 	points := data.Points
@@ -99,6 +106,8 @@ func DetectDuplicates(data *models.SurveyData) []models.ValidationIssue {
 	return issues
 }
 
+// DetectOutliers - finds points that are way off from the rest
+// uses simple std deviation approach
 func DetectOutliers(data *models.SurveyData) []models.ValidationIssue {
 	var issues []models.ValidationIssue
 

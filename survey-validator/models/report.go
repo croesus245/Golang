@@ -1,5 +1,7 @@
 package models
 
+// report.go - validation results and stats
+
 import "time"
 
 type ValidationStatus string
@@ -64,6 +66,7 @@ type ValidationReport struct {
 	ProcessingTime  string            `json:"processing_time"`
 }
 
+// NewValidationReport - starts with PASS, we'll downgrade if issues found
 func NewValidationReport(projectID string) *ValidationReport {
 	return &ValidationReport{
 		ProjectID: projectID,
@@ -73,6 +76,7 @@ func NewValidationReport(projectID string) *ValidationReport {
 	}
 }
 
+// AddIssue and update status accordingly
 func (r *ValidationReport) AddIssue(issue ValidationIssue) {
 	r.Issues = append(r.Issues, issue)
 
@@ -86,6 +90,8 @@ func (r *ValidationReport) AddIssue(issue ValidationIssue) {
 	}
 }
 
+// CalculateConfidenceScore - rough quality indicator
+// starts at 100, deduct points for each issue
 func (r *ValidationReport) CalculateConfidenceScore() {
 	if len(r.Issues) == 0 {
 		r.ConfidenceScore = 100.0

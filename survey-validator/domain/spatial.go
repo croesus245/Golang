@@ -1,17 +1,21 @@
 package domain
 
+// spatial.go - geometry helpers for survey calcs
+
 import (
 	"math"
 
 	"github.com/survey-validator/models"
 )
 
+// Distance - 2D horizontal distance between two points
 func Distance(p1, p2 *models.SurveyPoint) float64 {
 	dE := p2.Easting - p1.Easting
 	dN := p2.Northing - p1.Northing
 	return math.Sqrt(dE*dE + dN*dN)
 }
 
+// Distance3D - includes height if both points have it
 func Distance3D(p1, p2 *models.SurveyPoint) float64 {
 	if !p1.HasHeight() || !p2.HasHeight() {
 		return Distance(p1, p2)
@@ -22,9 +26,12 @@ func Distance3D(p1, p2 *models.SurveyPoint) float64 {
 	return math.Sqrt(dE*dE + dN*dN + dH*dH)
 }
 
+// Bearing from p1 to p2, in degrees (0-360)
 func Bearing(p1, p2 *models.SurveyPoint) float64 {
 	dE := p2.Easting - p1.Easting
 	dN := p2.Northing - p1.Northing
+
+	// atan2 gives us angle from north, convert to degrees
 	bearing := math.Atan2(dE, dN) * 180 / math.Pi
 	if bearing < 0 {
 		bearing += 360
@@ -32,6 +39,8 @@ func Bearing(p1, p2 *models.SurveyPoint) float64 {
 	return bearing
 }
 
+// BearingDifference - smallest angle between two bearings
+// handles the 359° to 1° wrap-around case
 func BearingDifference(b1, b2 float64) float64 {
 	diff := math.Abs(b1 - b2)
 	if diff > 180 {
@@ -40,6 +49,7 @@ func BearingDifference(b1, b2 float64) float64 {
 	return diff
 }
 
+// Centroid - average E,N of all points
 func Centroid(points []models.SurveyPoint) (float64, float64) {
 	if len(points) == 0 {
 		return 0, 0
@@ -53,6 +63,7 @@ func Centroid(points []models.SurveyPoint) (float64, float64) {
 	return sumE / n, sumN / n
 }
 
+// StandardDeviation of distances from centroid
 func StandardDeviation(points []models.SurveyPoint, cE, cN float64) float64 {
 	if len(points) == 0 {
 		return 0
@@ -66,6 +77,7 @@ func StandardDeviation(points []models.SurveyPoint, cE, cN float64) float64 {
 	return math.Sqrt(sum / float64(len(points)))
 }
 
+// BoundingBox - min/max extents of the survey
 func BoundingBox(points []models.SurveyPoint) models.BBox {
 	if len(points) == 0 {
 		return models.BBox{}
