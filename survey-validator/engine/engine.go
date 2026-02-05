@@ -42,6 +42,11 @@ type checkResult struct {
 
 // Validate - runs all checks in parallel, collects results
 func (e *Engine) Validate(data *models.SurveyData) *models.ValidationReport {
+	return e.ValidateWithOptions(data, nil)
+}
+
+// ValidateWithOptions - validation with optional traverse adjustment settings
+func (e *Engine) ValidateWithOptions(data *models.SurveyData, traverseInput *models.TraverseInput) *models.ValidationReport {
 	startTime := time.Now()
 
 	report := models.NewValidationReport(data.ProjectID)
@@ -74,6 +79,13 @@ func (e *Engine) Validate(data *models.SurveyData) *models.ValidationReport {
 	}
 
 	report.Summary = domain.CalculateSummaryStatistics(data)
+
+	// run traverse adjustment if we have traverse points
+	if report.Summary.TraversePoints >= 3 {
+		report.TraverseResult = domain.ComputeTraverseAdjustment(data, traverseInput)
+		report.ChecksPerformed = append(report.ChecksPerformed, "bowditch_adjustment")
+	}
+
 	report.CalculateConfidenceScore()
 	report.ProcessingTime = time.Since(startTime).String()
 

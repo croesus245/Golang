@@ -64,6 +64,7 @@ type ValidationReport struct {
 	Issues          []ValidationIssue `json:"issues"`
 	ChecksPerformed []string          `json:"checks_performed"`
 	ProcessingTime  string            `json:"processing_time"`
+	TraverseResult  *TraverseResult   `json:"traverse_adjustment,omitempty"`
 }
 
 // NewValidationReport - starts with PASS, we'll downgrade if issues found
