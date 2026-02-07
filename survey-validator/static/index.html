@@ -549,12 +549,11 @@
             border: 1px solid var(--border);
             background: #fff;
             position: relative;
+            min-height: 400px;
         }
 
         #vizCanvas {
             display: block;
-            width: 100%;
-            height: 400px;
         }
 
         .viz-legend {
@@ -1157,8 +1156,8 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             container.innerHTML = html;
             resultsDiv.classList.add('show');
             
-            // Draw the visualization
-            drawVisualization(result);
+            // Draw the visualization after DOM update
+            setTimeout(() => drawVisualization(result), 50);
             
             resultsDiv.scrollIntoView({ behavior: 'smooth' });
         }
@@ -1169,22 +1168,27 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
 
         function drawVisualization(result) {
             const canvas = document.getElementById('vizCanvas');
-            if (!canvas) return;
+            if (!canvas) {
+                console.log('Canvas not found');
+                return;
+            }
             
+            const container = canvas.parentElement;
             const ctx = canvas.getContext('2d');
-            const rect = canvas.parentElement.getBoundingClientRect();
+            
+            // Get width from container
+            const width = container.clientWidth || 800;
+            const height = 400;
             
             // Set canvas size for sharp rendering
             const dpr = window.devicePixelRatio || 1;
-            canvas.width = rect.width * dpr;
-            canvas.height = 400 * dpr;
-            canvas.style.width = rect.width + 'px';
-            canvas.style.height = '400px';
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
             ctx.scale(dpr, dpr);
             
-            const width = rect.width;
-            const height = 400;
-            const padding = 50;
+            const padding = 60;
             
             // Get points from current input
             const { points } = getPoints();
