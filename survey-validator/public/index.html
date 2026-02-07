@@ -534,6 +534,54 @@
         .severity-text.warning { color: var(--warning); }
         .severity-text.info { color: var(--info); }
 
+        .viz-container {
+            margin-bottom: 20px;
+        }
+
+        .viz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .viz-canvas-wrap {
+            border: 1px solid var(--border);
+            background: #fff;
+            position: relative;
+        }
+
+        #vizCanvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+        }
+
+        .viz-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .viz-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .viz-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .viz-legend-dot.traverse { background: #2563eb; }
+        .viz-legend-dot.control { background: #16a34a; }
+        .viz-legend-dot.detail { background: #6b7280; }
+        .viz-legend-dot.flagged { background: #dc2626; }
+        .viz-legend-line { width: 16px; height: 2px; background: #94a3b8; }
+
         .export-row {
             display: flex;
             gap: 8px;
@@ -1047,6 +1095,25 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
                 </table>
             `;
             
+            // Add visualization
+            html += `
+                <div class="viz-container">
+                    <div class="viz-header">
+                        <div class="section-title" style="margin:0;border:0;padding:0;">Point Visualization</div>
+                        <div class="viz-legend">
+                            <span class="viz-legend-item"><span class="viz-legend-dot traverse"></span>Traverse</span>
+                            <span class="viz-legend-item"><span class="viz-legend-dot control"></span>Control</span>
+                            <span class="viz-legend-item"><span class="viz-legend-dot detail"></span>Detail</span>
+                            <span class="viz-legend-item"><span class="viz-legend-dot flagged"></span>Flagged</span>
+                            <span class="viz-legend-item"><span class="viz-legend-line"></span>Traverse Path</span>
+                        </div>
+                    </div>
+                    <div class="viz-canvas-wrap">
+                        <canvas id="vizCanvas"></canvas>
+                    </div>
+                </div>
+            `;
+            
             html += `<div class="section-title">Issues (${result.issues.length})</div>`;
             
             if (result.issues.length === 0) {
@@ -1089,11 +1156,165 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             
             container.innerHTML = html;
             resultsDiv.classList.add('show');
+            
+            // Draw the visualization
+            drawVisualization(result);
+            
             resultsDiv.scrollIntoView({ behavior: 'smooth' });
         }
 
         function formatCheck(name) {
             return name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+
+        function drawVisualization(result) {
+            const canvas = document.getElementById('vizCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            
+            // Set canvas size for sharp rendering
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = 400 * dpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = '400px';
+            ctx.scale(dpr, dpr);
+            
+            const width = rect.width;
+            const height = 400;
+            const padding = 50;
+            
+            // Get points from current input
+            const { points } = getPoints();
+            if (points.length === 0) return;
+            
+            // Find bounds
+            let minE = Infinity, maxE = -Infinity, minN = Infinity, maxN = -Infinity;
+            points.forEach(p => {
+                minE = Math.min(minE, p.easting);
+                maxE = Math.max(maxE, p.easting);
+                minN = Math.min(minN, p.northing);
+                maxN = Math.max(maxN, p.northing);
+            });
+            
+            // Add buffer
+            const rangeE = maxE - minE || 1;
+            const rangeN = maxN - minN || 1;
+            const buffer = Math.max(rangeE, rangeN) * 0.1;
+            minE -= buffer; maxE += buffer;
+            minN -= buffer; maxN += buffer;
+            
+            // Scale functions
+            const scaleX = (e) => padding + ((e - minE) / (maxE - minE)) * (width - 2 * padding);
+            const scaleY = (n) => height - padding - ((n - minN) / (maxN - minN)) * (height - 2 * padding);
+            
+            // Clear canvas
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw grid
+            ctx.strokeStyle = '#e4e4e7';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const x = padding + (i / 5) * (width - 2 * padding);
+                const y = padding + (i / 5) * (height - 2 * padding);
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, height - padding);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+            
+            // Draw axis labels
+            ctx.fillStyle = '#a1a1aa';
+            ctx.font = '10px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= 5; i++) {
+                const eVal = minE + (i / 5) * (maxE - minE);
+                const nVal = minN + (i / 5) * (maxN - minN);
+                const x = padding + (i / 5) * (width - 2 * padding);
+                const y = height - padding + 15;
+                ctx.fillText(eVal.toFixed(1), x, y);
+            }
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const nVal = minN + (i / 5) * (maxN - minN);
+                const y = height - padding - (i / 5) * (height - 2 * padding);
+                ctx.fillText(nVal.toFixed(1), padding - 8, y + 3);
+            }
+            
+            // Collect flagged point IDs
+            const flaggedIds = new Set();
+            result.issues.forEach(issue => {
+                if (issue.point_ids) {
+                    issue.point_ids.forEach(id => flaggedIds.add(id));
+                }
+            });
+            
+            // Get traverse points in order
+            const traversePoints = points.filter(p => p.survey_type === 'traverse');
+            
+            // Draw traverse lines
+            if (traversePoints.length > 1) {
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(scaleX(traversePoints[0].easting), scaleY(traversePoints[0].northing));
+                for (let i = 1; i < traversePoints.length; i++) {
+                    ctx.lineTo(scaleX(traversePoints[i].easting), scaleY(traversePoints[i].northing));
+                }
+                ctx.stroke();
+            }
+            
+            // Draw points
+            const colors = {
+                traverse: '#2563eb',
+                control: '#16a34a',
+                detail: '#6b7280'
+            };
+            
+            points.forEach(p => {
+                const x = scaleX(p.easting);
+                const y = scaleY(p.northing);
+                const isFlagged = flaggedIds.has(p.point_id);
+                const radius = isFlagged ? 7 : 5;
+                
+                // Draw point
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = isFlagged ? '#dc2626' : (colors[p.survey_type] || '#6b7280');
+                ctx.fill();
+                
+                if (isFlagged) {
+                    ctx.strokeStyle = '#dc2626';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius + 4, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // Draw label
+                ctx.fillStyle = '#18181b';
+                ctx.font = '11px -apple-system, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(p.point_id, x + radius + 4, y + 3);
+            });
+            
+            // Axis titles
+            ctx.fillStyle = '#52525b';
+            ctx.font = '11px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Easting (m)', width / 2, height - 10);
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Northing (m)', 0, 0);
+            ctx.restore();
         }
 
         function getSuggestedFix(issue) {

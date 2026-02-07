@@ -140,120 +140,6 @@
             padding: 20px;
         }
 
-        /* Mode Selector Styles */
-        .mode-card {
-            margin-bottom: 16px;
-        }
-        .mode-selector {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .mode-label {
-            font-weight: 600;
-            font-size: 13px;
-            color: var(--text);
-        }
-        .mode-buttons {
-            display: flex;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            overflow: hidden;
-        }
-        .mode-btn {
-            padding: 8px 20px;
-            border: none;
-            background: var(--bg-white);
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .mode-btn:not(:last-child) {
-            border-right: 1px solid var(--border);
-        }
-        .mode-btn:hover {
-            background: var(--bg-muted);
-        }
-        .mode-btn.active {
-            background: var(--primary);
-            color: white;
-        }
-        .control-settings {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }
-        .settings-row {
-            display: flex;
-            gap: 24px;
-            margin-bottom: 16px;
-        }
-        .setting-group {
-            flex: 1;
-        }
-        .setting-group label {
-            display: block;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-        .setting-group select,
-        .setting-group input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 13px;
-        }
-        .known-controls {
-            margin-top: 16px;
-        }
-        .section-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .controls-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .control-input label {
-            display: block;
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-        .control-fields {
-            display: grid;
-            grid-template-columns: 1fr 1.5fr 1.5fr;
-            gap: 8px;
-        }
-        .control-fields input {
-            padding: 8px 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 13px;
-        }
-        .leveling-section {
-            margin-top: 16px;
-        }
-        @media (max-width: 768px) {
-            .controls-grid {
-                grid-template-columns: 1fr;
-            }
-            .settings-row {
-                flex-direction: column;
-                gap: 16px;
-            }
-        }
-
         .info-banner {
             display: flex;
             gap: 32px;
@@ -617,73 +503,6 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .section-subtitle {
-            font-size: 12px;
-            font-weight: 600;
-            margin: 16px 0 8px 0;
-            color: var(--text-secondary);
-        }
-
-        .adjustment-status {
-            padding: 12px 16px;
-            border-radius: 6px;
-            margin-bottom: 16px;
-            font-size: 13px;
-        }
-        .adjustment-status.pass {
-            background: var(--success-light);
-            color: var(--success);
-            border: 1px solid var(--success);
-        }
-        .adjustment-status.fail {
-            background: var(--error-light);
-            color: var(--error);
-            border: 1px solid var(--error);
-        }
-        .adjustment-status.warning {
-            background: var(--warning-light);
-            color: var(--warning);
-            border: 1px solid var(--warning);
-        }
-
-        .traverse-type {
-            padding: 10px 16px;
-            background: var(--bg-muted);
-            border-radius: 6px;
-            margin-bottom: 16px;
-            font-size: 13px;
-        }
-        .traverse-type.warning {
-            background: var(--warning-light);
-            border-left: 4px solid var(--warning);
-        }
-        .traverse-type .type-desc {
-            color: var(--text-secondary);
-        }
-
-        .suggested-fixes {
-            background: var(--warning-light);
-            border: 1px solid var(--warning);
-            border-radius: 6px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        .fixes-title {
-            font-weight: 600;
-            font-size: 13px;
-            margin-bottom: 8px;
-            color: var(--warning);
-        }
-        .fixes-list {
-            margin: 0;
-            padding-left: 20px;
-            font-size: 13px;
-            color: var(--text);
-        }
-        .fixes-list li {
-            margin-bottom: 4px;
-        }
-
         .issues-table {
             width: 100%;
             border-collapse: collapse;
@@ -714,6 +533,54 @@
         .severity-text.error { color: var(--error); }
         .severity-text.warning { color: var(--warning); }
         .severity-text.info { color: var(--info); }
+
+        .viz-container {
+            margin-bottom: 20px;
+        }
+
+        .viz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .viz-canvas-wrap {
+            border: 1px solid var(--border);
+            background: #fff;
+            position: relative;
+        }
+
+        #vizCanvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+        }
+
+        .viz-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .viz-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .viz-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .viz-legend-dot.traverse { background: #2563eb; }
+        .viz-legend-dot.control { background: #16a34a; }
+        .viz-legend-dot.detail { background: #6b7280; }
+        .viz-legend-dot.flagged { background: #dc2626; }
+        .viz-legend-line { width: 16px; height: 2px; background: #94a3b8; }
 
         .export-row {
             display: flex;
@@ -866,79 +733,6 @@
             </p>
         </div>
 
-        <!-- Mode Selection -->
-        <div class="card mode-card">
-            <div class="card-body" style="padding: 16px 20px;">
-                <div class="mode-selector">
-                    <label class="mode-label">Mode:</label>
-                    <div class="mode-buttons">
-                        <button class="mode-btn active" onclick="setMode('topo')" id="modeTopoBtn">Topo QC</button>
-                        <button class="mode-btn" onclick="setMode('control')" id="modeControlBtn">Control Extension</button>
-                    </div>
-                </div>
-                
-                <div id="controlSettings" class="control-settings" style="display:none;">
-                    <div class="settings-row">
-                        <div class="setting-group">
-                            <label>Network Type</label>
-                            <select id="networkType" onchange="updateNetworkType()">
-                                <option value="traverse">Traverse</option>
-                                <option value="leveling">Leveling</option>
-                            </select>
-                        </div>
-                        <div class="setting-group">
-                            <label>Tolerance Class</label>
-                            <select id="toleranceClass">
-                                <option value="first_order">1st Order (1:25000)</option>
-                                <option value="second_order">2nd Order (1:10000)</option>
-                                <option value="third_order" selected>3rd Order (1:5000)</option>
-                                <option value="engineering">Engineering (1:3000)</option>
-                                <option value="construction">Construction (1:1000)</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Known Controls -->
-                    <div id="knownControlsSection" class="known-controls">
-                        <div class="section-label">Known Control Points</div>
-                        <div class="controls-grid">
-                            <div class="control-input">
-                                <label>Start Control (held fixed)</label>
-                                <div class="control-fields">
-                                    <input type="text" id="startControlId" placeholder="Point ID">
-                                    <input type="number" id="startControlE" placeholder="Easting" step="0.001">
-                                    <input type="number" id="startControlN" placeholder="Northing" step="0.001">
-                                </div>
-                            </div>
-                            <div class="control-input">
-                                <label>End Control (for link traverse)</label>
-                                <div class="control-fields">
-                                    <input type="text" id="endControlId" placeholder="Point ID (optional)">
-                                    <input type="number" id="endControlE" placeholder="Easting" step="0.001">
-                                    <input type="number" id="endControlN" placeholder="Northing" step="0.001">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Leveling Settings (hidden by default) -->
-                    <div id="levelingSection" class="leveling-section" style="display:none;">
-                        <div class="section-label">Leveling Setup</div>
-                        <div class="settings-row">
-                            <div class="setting-group">
-                                <label>Start BM Height (m)</label>
-                                <input type="number" id="startBMHeight" placeholder="e.g. 100.000" step="0.001">
-                            </div>
-                            <div class="setting-group">
-                                <label>End BM Height (if known)</label>
-                                <input type="number" id="endBMHeight" placeholder="optional" step="0.001">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="card" id="input">
             <div class="card-header">
                 <h2 class="card-title">Survey Points</h2>
@@ -1066,72 +860,10 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
     <script>
         let rowCount = 0;
         let lastResult = null;
-        let currentMode = 'topo';
 
         document.addEventListener('DOMContentLoaded', () => {
             addRow(); addRow(); addRow();
         });
-
-        // Mode switching
-        function setMode(mode) {
-            currentMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(mode === 'topo' ? 'modeTopoBtn' : 'modeControlBtn').classList.add('active');
-            document.getElementById('controlSettings').style.display = mode === 'control' ? 'block' : 'none';
-            
-            if (mode === 'control') {
-                updateNetworkType();
-            }
-        }
-
-        function updateNetworkType() {
-            const type = document.getElementById('networkType').value;
-            document.getElementById('knownControlsSection').style.display = type === 'traverse' ? 'block' : 'none';
-            document.getElementById('levelingSection').style.display = type === 'leveling' ? 'block' : 'none';
-        }
-
-        function getControlExtensionInput() {
-            if (currentMode !== 'control') return null;
-
-            const input = {
-                mode: 'control_extension',
-                network_type: document.getElementById('networkType').value,
-                tolerance_class: document.getElementById('toleranceClass').value
-            };
-
-            // get required precision from tolerance class
-            const precisionMap = {
-                'first_order': 25000,
-                'second_order': 10000,
-                'third_order': 5000,
-                'engineering': 3000,
-                'construction': 1000
-            };
-            input.required_precision = precisionMap[input.tolerance_class] || 5000;
-
-            // start control
-            const startId = document.getElementById('startControlId').value.trim();
-            const startE = parseFloat(document.getElementById('startControlE').value);
-            const startN = parseFloat(document.getElementById('startControlN').value);
-            if (startId && !isNaN(startE) && !isNaN(startN)) {
-                input.start_control = { point_id: startId, easting: startE, northing: startN, is_start: true };
-            }
-
-            // end control
-            const endId = document.getElementById('endControlId').value.trim();
-            const endE = parseFloat(document.getElementById('endControlE').value);
-            const endN = parseFloat(document.getElementById('endControlN').value);
-            if (endId && !isNaN(endE) && !isNaN(endN)) {
-                input.end_control = { point_id: endId, easting: endE, northing: endN, is_end: true };
-            }
-
-            // leveling
-            if (input.network_type === 'leveling') {
-                input.start_bm_height = parseFloat(document.getElementById('startBMHeight').value) || 0;
-            }
-
-            return input;
-        }
 
         function addRow(pointId = '', easting = '', northing = '', height = '', type = 'traverse') {
             const tbody = document.getElementById('pointsBody');
@@ -1311,14 +1043,6 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
                 points: points
             };
 
-            // add control extension settings if in that mode
-            const controlInput = getControlExtensionInput();
-            if (controlInput) {
-                data.control_input = controlInput;
-                // override required precision from tolerance class
-                data.required_precision = controlInput.required_precision;
-            }
-
             try {
                 const response = await fetch('/api/v1/validate', {
                     method: 'POST',
@@ -1334,133 +1058,6 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
                 btn.disabled = false;
                 btn.textContent = 'Run Validation';
             }
-        }
-
-        function renderTraverseAdjustment(adj) {
-            const statusCls = adj.status === 'PASS' ? 'pass' : (adj.status === 'FAIL' ? 'fail' : 'warning');
-            
-            let html = `
-                <div class="section-title">Bowditch Traverse Adjustment</div>
-                
-                <div class="adjustment-status ${statusCls}">
-                    <strong>${adj.status}</strong> - ${adj.message}
-                </div>
-            `;
-            
-            // Traverse classification
-            if (adj.traverse_type) {
-                const typeLabels = { closed: 'Closed Loop', link: 'Link Traverse', open: 'Open Traverse' };
-                const typeCls = adj.traverse_type === 'open' ? 'warning' : '';
-                html += `
-                    <div class="traverse-type ${typeCls}">
-                        <strong>Type:</strong> ${typeLabels[adj.traverse_type] || adj.traverse_type}
-                        ${adj.traverse_type_desc ? `<span class="type-desc"> — ${adj.traverse_type_desc}</span>` : ''}
-                    </div>
-                `;
-            }
-            
-            html += `
-                <table class="data-table" style="margin-bottom:16px;">
-                    <tr>
-                        <td class="label">ΔE (Misclosure)</td>
-                        <td>${adj.sum_delta_e.toFixed(4)} m</td>
-                        <td class="label">ΔN (Misclosure)</td>
-                        <td>${adj.sum_delta_n.toFixed(4)} m</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Linear Misclosure</td>
-                        <td>${adj.linear_misclosure.toFixed(4)} m</td>
-                        <td class="label">Total Distance</td>
-                        <td>${adj.total_distance.toFixed(3)} m</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Closure Ratio</td>
-                        <td><strong>${adj.closure_ratio}</strong></td>
-                        <td class="label">Required</td>
-                        <td>1:${adj.required_precision.toFixed(0)}</td>
-                    </tr>
-                </table>
-            `;
-            
-            // Suggested fixes (if any)
-            if (adj.suggested_fixes && adj.suggested_fixes.length > 0) {
-                html += `
-                    <div class="suggested-fixes">
-                        <div class="fixes-title">⚠️ Suggested Actions</div>
-                        <ul class="fixes-list">
-                            ${adj.suggested_fixes.map(fix => `<li>${fix}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-            }
-            
-            // Legs table with corrections
-            if (adj.legs && adj.legs.length > 0) {
-                html += `
-                    <div class="section-subtitle">Traverse Legs with Corrections</div>
-                    <table class="issues-table">
-                        <thead>
-                            <tr>
-                                <th>From</th>
-                                <th>To</th>
-                                <th>Distance</th>
-                                <th>Bearing</th>
-                                <th>ΔE</th>
-                                <th>ΔN</th>
-                                <th>Corr E</th>
-                                <th>Corr N</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${adj.legs.map(leg => `
-                                <tr>
-                                    <td>${leg.from_point}</td>
-                                    <td>${leg.to_point}</td>
-                                    <td>${leg.distance.toFixed(3)}</td>
-                                    <td>${leg.bearing.toFixed(4)}°</td>
-                                    <td>${leg.delta_e.toFixed(4)}</td>
-                                    <td>${leg.delta_n.toFixed(4)}</td>
-                                    <td>${leg.correction_e.toFixed(4)}</td>
-                                    <td>${leg.correction_n.toFixed(4)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            }
-            
-            // Adjusted coordinates
-            if (adj.adjusted_points && adj.adjusted_points.length > 0) {
-                html += `
-                    <div class="section-subtitle">Adjusted Coordinates</div>
-                    <table class="issues-table">
-                        <thead>
-                            <tr>
-                                <th>Point</th>
-                                <th>Raw E</th>
-                                <th>Raw N</th>
-                                <th>Adj E</th>
-                                <th>Adj N</th>
-                                <th>Residual</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${adj.adjusted_points.map(pt => `
-                                <tr>
-                                    <td>${pt.point_id}</td>
-                                    <td>${pt.raw_easting.toFixed(3)}</td>
-                                    <td>${pt.raw_northing.toFixed(3)}</td>
-                                    <td>${pt.adjusted_easting.toFixed(3)}</td>
-                                    <td>${pt.adjusted_northing.toFixed(3)}</td>
-                                    <td>${pt.residual_distance.toFixed(4)} m</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            }
-            
-            return html;
         }
 
         function showResults(result) {
@@ -1498,6 +1095,25 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
                 </table>
             `;
             
+            // Add visualization
+            html += `
+                <div class="viz-container">
+                    <div class="viz-header">
+                        <div class="section-title" style="margin:0;border:0;padding:0;">Point Visualization</div>
+                        <div class="viz-legend">
+                            <span class="viz-legend-item"><span class="viz-legend-dot traverse"></span>Traverse</span>
+                            <span class="viz-legend-item"><span class="viz-legend-dot control"></span>Control</span>
+                            <span class="viz-legend-item"><span class="viz-legend-dot detail"></span>Detail</span>
+                            <span class="viz-legend-item"><span class="viz-legend-dot flagged"></span>Flagged</span>
+                            <span class="viz-legend-item"><span class="viz-legend-line"></span>Traverse Path</span>
+                        </div>
+                    </div>
+                    <div class="viz-canvas-wrap">
+                        <canvas id="vizCanvas"></canvas>
+                    </div>
+                </div>
+            `;
+            
             html += `<div class="section-title">Issues (${result.issues.length})</div>`;
             
             if (result.issues.length === 0) {
@@ -1527,11 +1143,6 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
                 `;
             }
             
-            // Bowditch adjustment results
-            if (result.traverse_adjustment) {
-                html += renderTraverseAdjustment(result.traverse_adjustment);
-            }
-            
             html += `
                 <div class="section-title">Checks Performed</div>
                 <p style="margin-bottom:20px;">${result.checks_performed.map(c => formatCheck(c)).join(', ')}</p>
@@ -1545,11 +1156,165 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             
             container.innerHTML = html;
             resultsDiv.classList.add('show');
+            
+            // Draw the visualization
+            drawVisualization(result);
+            
             resultsDiv.scrollIntoView({ behavior: 'smooth' });
         }
 
         function formatCheck(name) {
             return name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+
+        function drawVisualization(result) {
+            const canvas = document.getElementById('vizCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            
+            // Set canvas size for sharp rendering
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = 400 * dpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = '400px';
+            ctx.scale(dpr, dpr);
+            
+            const width = rect.width;
+            const height = 400;
+            const padding = 50;
+            
+            // Get points from current input
+            const { points } = getPoints();
+            if (points.length === 0) return;
+            
+            // Find bounds
+            let minE = Infinity, maxE = -Infinity, minN = Infinity, maxN = -Infinity;
+            points.forEach(p => {
+                minE = Math.min(minE, p.easting);
+                maxE = Math.max(maxE, p.easting);
+                minN = Math.min(minN, p.northing);
+                maxN = Math.max(maxN, p.northing);
+            });
+            
+            // Add buffer
+            const rangeE = maxE - minE || 1;
+            const rangeN = maxN - minN || 1;
+            const buffer = Math.max(rangeE, rangeN) * 0.1;
+            minE -= buffer; maxE += buffer;
+            minN -= buffer; maxN += buffer;
+            
+            // Scale functions
+            const scaleX = (e) => padding + ((e - minE) / (maxE - minE)) * (width - 2 * padding);
+            const scaleY = (n) => height - padding - ((n - minN) / (maxN - minN)) * (height - 2 * padding);
+            
+            // Clear canvas
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw grid
+            ctx.strokeStyle = '#e4e4e7';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const x = padding + (i / 5) * (width - 2 * padding);
+                const y = padding + (i / 5) * (height - 2 * padding);
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, height - padding);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+            
+            // Draw axis labels
+            ctx.fillStyle = '#a1a1aa';
+            ctx.font = '10px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= 5; i++) {
+                const eVal = minE + (i / 5) * (maxE - minE);
+                const nVal = minN + (i / 5) * (maxN - minN);
+                const x = padding + (i / 5) * (width - 2 * padding);
+                const y = height - padding + 15;
+                ctx.fillText(eVal.toFixed(1), x, y);
+            }
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const nVal = minN + (i / 5) * (maxN - minN);
+                const y = height - padding - (i / 5) * (height - 2 * padding);
+                ctx.fillText(nVal.toFixed(1), padding - 8, y + 3);
+            }
+            
+            // Collect flagged point IDs
+            const flaggedIds = new Set();
+            result.issues.forEach(issue => {
+                if (issue.point_ids) {
+                    issue.point_ids.forEach(id => flaggedIds.add(id));
+                }
+            });
+            
+            // Get traverse points in order
+            const traversePoints = points.filter(p => p.survey_type === 'traverse');
+            
+            // Draw traverse lines
+            if (traversePoints.length > 1) {
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(scaleX(traversePoints[0].easting), scaleY(traversePoints[0].northing));
+                for (let i = 1; i < traversePoints.length; i++) {
+                    ctx.lineTo(scaleX(traversePoints[i].easting), scaleY(traversePoints[i].northing));
+                }
+                ctx.stroke();
+            }
+            
+            // Draw points
+            const colors = {
+                traverse: '#2563eb',
+                control: '#16a34a',
+                detail: '#6b7280'
+            };
+            
+            points.forEach(p => {
+                const x = scaleX(p.easting);
+                const y = scaleY(p.northing);
+                const isFlagged = flaggedIds.has(p.point_id);
+                const radius = isFlagged ? 7 : 5;
+                
+                // Draw point
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = isFlagged ? '#dc2626' : (colors[p.survey_type] || '#6b7280');
+                ctx.fill();
+                
+                if (isFlagged) {
+                    ctx.strokeStyle = '#dc2626';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius + 4, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // Draw label
+                ctx.fillStyle = '#18181b';
+                ctx.font = '11px -apple-system, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(p.point_id, x + radius + 4, y + 3);
+            });
+            
+            // Axis titles
+            ctx.fillStyle = '#52525b';
+            ctx.font = '11px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Easting (m)', width / 2, height - 10);
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Northing (m)', 0, 0);
+            ctx.restore();
         }
 
         function getSuggestedFix(issue) {
