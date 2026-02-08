@@ -293,12 +293,50 @@
         input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            background: #fff;
         }
 
         input.input-error {
             border-color: var(--error);
             background: var(--error-light);
+        }
+
+        tr.highlight-row {
+            animation: highlightPulse 1.5s ease-out;
+        }
+
+        @keyframes highlightPulse {
+            0% { background: rgba(37, 99, 235, 0.3); }
+            100% { background: transparent; }
+        }
+
+        tr.editing td {
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        td input:not(:focus):not(:hover) {
+            border-color: transparent;
+            background: transparent;
+        }
+
+        td input:hover:not(:focus) {
+            border-color: var(--border);
+            background: var(--bg-white);
+        }
+
+        .edit-indicator {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 8px;
+            color: var(--primary);
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        td:hover .edit-indicator {
+            opacity: 0.6;
         }
 
         select {
@@ -573,6 +611,34 @@
             vertical-align: top;
         }
 
+        .issue-row {
+            transition: background 0.15s ease;
+        }
+
+        .issue-row:hover {
+            background: rgba(37, 99, 235, 0.06);
+        }
+
+        .issue-row:active {
+            background: rgba(37, 99, 235, 0.12);
+        }
+
+        .point-link {
+            display: inline-block;
+            padding: 2px 6px;
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary);
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 12px;
+            transition: all 0.15s;
+        }
+
+        .point-link:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
         .severity-text {
             font-weight: 500;
         }
@@ -604,12 +670,27 @@
 
         #vizCanvas {
             display: block;
-            cursor: crosshair;
+            cursor: grab;
             transition: opacity 0.3s ease;
         }
 
         #vizCanvas:hover {
             opacity: 0.98;
+        }
+
+        #vizCanvas:active {
+            cursor: grabbing;
+        }
+
+        .viz-btn.active {
+            background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+            border-color: #d97706;
+            color: #fff;
+        }
+
+        .viz-btn.active:hover {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+            color: #fff;
         }
 
         .viz-legend {
@@ -702,6 +783,53 @@
         .viz-toggle:hover {
             background: var(--bg-muted);
             border-color: #cbd5e1;
+        }
+
+        .viz-coords {
+            position: absolute;
+            bottom: 8px;
+            left: 75px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: 'SF Mono', Monaco, monospace;
+            color: #475569;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .viz-coords.visible {
+            opacity: 1;
+        }
+
+        .viz-measure-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(245, 158, 11, 0.95);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .viz-measure-hint.visible {
+            opacity: 1;
+            animation: pulseHint 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseHint {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.02); }
         }
 
         .viz-tooltip {
@@ -1168,6 +1296,129 @@ bo1,556625.394,715058.507,2.16"></textarea>
             });
         }
 
+        function highlightRow(rowIndex) {
+            const rows = document.querySelectorAll('#pointsBody tr');
+            if (rowIndex >= 0 && rowIndex < rows.length) {
+                const row = rows[rowIndex];
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.remove('highlight-row');
+                void row.offsetWidth; // Force reflow
+                row.classList.add('highlight-row');
+                
+                // Focus first input in that row
+                const firstInput = row.querySelector('input');
+                if (firstInput) {
+                    setTimeout(() => firstInput.focus(), 300);
+                }
+            }
+        }
+
+        function highlightRowByPointId(pointId) {
+            const rows = document.querySelectorAll('#pointsBody tr');
+            for (let i = 0; i < rows.length; i++) {
+                const input = rows[i].querySelector('[data-field="pointId"]');
+                if (input && (input.value === pointId || input.placeholder === pointId)) {
+                    highlightRow(i);
+                    return;
+                }
+            }
+        }
+
+        function jumpToIssuePoints(pointIdsStr) {
+            if (!pointIdsStr) return;
+            const pointIds = pointIdsStr.split(',').filter(id => id.trim());
+            if (pointIds.length === 0) return;
+            
+            // Expand table if collapsed
+            if (!tableExpanded) {
+                tableExpanded = true;
+                updateTableToggle();
+            }
+            
+            // Highlight the first point
+            highlightRowByPointId(pointIds[0].trim());
+            
+            // Also highlight all other points with a delay
+            pointIds.slice(1).forEach((id, i) => {
+                setTimeout(() => {
+                    const rows = document.querySelectorAll('#pointsBody tr');
+                    for (let j = 0; j < rows.length; j++) {
+                        const input = rows[j].querySelector('[data-field="pointId"]');
+                        if (input && (input.value === id.trim() || input.placeholder === id.trim())) {
+                            rows[j].classList.remove('highlight-row');
+                            void rows[j].offsetWidth;
+                            rows[j].classList.add('highlight-row');
+                        }
+                    }
+                }, (i + 1) * 200);
+            });
+        }
+
+        // Keyboard navigation for table
+        document.addEventListener('keydown', function(e) {
+            const activeEl = document.activeElement;
+            if (!activeEl || !activeEl.closest('#pointsBody')) return;
+            
+            const currentRow = activeEl.closest('tr');
+            const currentCell = activeEl.closest('td');
+            if (!currentRow || !currentCell) return;
+            
+            const cells = Array.from(currentRow.querySelectorAll('input, select'));
+            const cellIndex = cells.indexOf(activeEl);
+            const rows = Array.from(document.querySelectorAll('#pointsBody tr'));
+            const rowIndex = rows.indexOf(currentRow);
+            
+            if (e.key === 'Tab' && !e.shiftKey) {
+                // Tab to next cell or next row
+                if (cellIndex < cells.length - 1) {
+                    e.preventDefault();
+                    cells[cellIndex + 1].focus();
+                } else if (rowIndex < rows.length - 1) {
+                    e.preventDefault();
+                    const nextRow = rows[rowIndex + 1];
+                    const nextInput = nextRow.querySelector('input');
+                    if (nextInput) nextInput.focus();
+                }
+            } else if (e.key === 'Tab' && e.shiftKey) {
+                // Shift+Tab to previous cell or previous row
+                if (cellIndex > 0) {
+                    e.preventDefault();
+                    cells[cellIndex - 1].focus();
+                } else if (rowIndex > 0) {
+                    e.preventDefault();
+                    const prevRow = rows[rowIndex - 1];
+                    const prevCells = prevRow.querySelectorAll('input, select');
+                    if (prevCells.length > 0) prevCells[prevCells.length - 1].focus();
+                }
+            } else if (e.key === 'ArrowDown' && rowIndex < rows.length - 1) {
+                e.preventDefault();
+                const nextRow = rows[rowIndex + 1];
+                const nextCells = nextRow.querySelectorAll('input, select');
+                if (nextCells[cellIndex]) nextCells[cellIndex].focus();
+            } else if (e.key === 'ArrowUp' && rowIndex > 0) {
+                e.preventDefault();
+                const prevRow = rows[rowIndex - 1];
+                const prevCells = prevRow.querySelectorAll('input, select');
+                if (prevCells[cellIndex]) prevCells[cellIndex].focus();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                // Move to same cell in next row, or add new row
+                if (rowIndex < rows.length - 1) {
+                    const nextRow = rows[rowIndex + 1];
+                    const nextCells = nextRow.querySelectorAll('input, select');
+                    if (nextCells[cellIndex]) nextCells[cellIndex].focus();
+                } else {
+                    addRow();
+                    setTimeout(() => {
+                        const newRows = document.querySelectorAll('#pointsBody tr');
+                        const newRow = newRows[newRows.length - 1];
+                        const newCells = newRow.querySelectorAll('input, select');
+                        if (newCells[0]) newCells[0].focus();
+                    }, 50);
+                }
+            }
+        });
+
         function validateRow(input) {
             const row = input.closest('tr');
             const value = input.value.trim();
@@ -1361,6 +1612,7 @@ bo1,556625.394,715058.507,2.16"></textarea>
                             <button class="viz-btn" onclick="vizZoom(1.25)" title="Zoom In">＋</button>
                             <button class="viz-btn" onclick="vizZoom(0.8)" title="Zoom Out">−</button>
                             <button class="viz-btn" onclick="vizReset()" title="Reset View">↺</button>
+                            <button class="viz-btn" id="measureBtn" onclick="toggleMeasureMode()" title="Measure Distance">📏</button>
                             <label class="viz-toggle"><input type="checkbox" id="showLabelsToggle" checked onchange="redrawViz()"> 🏷️ Labels</label>
                             ${hasAdjusted ? `<label class="viz-toggle"><input type="checkbox" id="showAdjustedToggle" onchange="toggleAdjustedView()"> ✓ Adjusted</label>` : ''}
                             <button class="viz-btn primary" onclick="exportVizPNG()" title="Download PNG">📥 Export</button>
@@ -1369,6 +1621,8 @@ bo1,556625.394,715058.507,2.16"></textarea>
                     <div class="viz-canvas-wrap" style="position:relative;">
                         <canvas id="vizCanvas"></canvas>
                         <div id="vizTooltip" class="viz-tooltip"></div>
+                        <div id="vizCoords" class="viz-coords"></div>
+                        <div id="vizMeasureHint" class="viz-measure-hint"></div>
                     </div>
                 </div>
             `;
@@ -1433,7 +1687,7 @@ bo1,556625.394,715058.507,2.16"></textarea>
                 }
             }
             
-            html += `<div class="section-title">Issues (${result.issues.length})</div>`;
+            html += `<div class="section-title">Issues (${result.issues.length}) <span style="font-size:11px;font-weight:400;color:var(--text-muted);">Click to edit source row</span></div>`;
             
             if (result.issues.length === 0) {
                 html += `<p style="color:var(--text-secondary);margin-bottom:20px;">No issues detected.</p>`;
@@ -1450,10 +1704,10 @@ bo1,556625.394,715058.507,2.16"></textarea>
                         </thead>
                         <tbody>
                             ${result.issues.map(issue => `
-                                <tr>
+                                <tr class="issue-row" style="cursor:pointer;" onclick="jumpToIssuePoints('${issue.point_ids ? issue.point_ids.join(',') : ''}')">
                                     <td><span class="severity-text ${issue.severity}">${issue.severity.toUpperCase()}</span></td>
                                     <td>${formatCheck(issue.check_name)}</td>
-                                    <td>${issue.point_ids ? issue.point_ids.join(', ') : '-'}</td>
+                                    <td class="issue-points">${issue.point_ids ? issue.point_ids.map(id => `<span class="point-link">${id}</span>`).join(', ') : '-'}</td>
                                     <td>${issue.description}</td>
                                 </tr>
                             `).join('')}
@@ -1476,10 +1730,24 @@ bo1,556625.394,715058.507,2.16"></textarea>
             container.innerHTML = html;
             resultsDiv.classList.add('show');
             
-            // Draw the visualization after DOM update
-            setTimeout(() => drawVisualization(result), 50);
+            // Draw the visualization after DOM update with entrance animation
+            setTimeout(() => {
+                vizAnimationProgress = 0;
+                animateVisualization(result);
+            }, 50);
             
             resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function animateVisualization(result) {
+            vizAnimationProgress += 0.08;
+            if (vizAnimationProgress >= 1) {
+                vizAnimationProgress = 1;
+                drawVisualization(result);
+                return;
+            }
+            drawVisualization(result, vizAnimationProgress);
+            requestAnimationFrame(() => animateVisualization(result));
         }
 
         function formatCheck(name) {
@@ -1500,10 +1768,16 @@ bo1,556625.394,715058.507,2.16"></textarea>
         let vizZoomLevel = 1;
         let vizPanX = 0;
         let vizPanY = 0;
+        let vizIsDragging = false;
+        let vizDragStart = { x: 0, y: 0 };
+        let vizMeasureMode = false;
+        let vizMeasureStart = null;
+        let vizMeasureEnd = null;
+        let vizAnimationProgress = 0;
 
         function vizZoom(factor) {
             vizZoomLevel *= factor;
-            vizZoomLevel = Math.max(0.5, Math.min(5, vizZoomLevel));
+            vizZoomLevel = Math.max(0.5, Math.min(8, vizZoomLevel));
             redrawViz();
         }
 
@@ -1511,6 +1785,26 @@ bo1,556625.394,715058.507,2.16"></textarea>
             vizZoomLevel = 1;
             vizPanX = 0;
             vizPanY = 0;
+            vizMeasureStart = null;
+            vizMeasureEnd = null;
+            vizMeasureMode = false;
+            const measureBtn = document.getElementById('measureBtn');
+            if (measureBtn) measureBtn.classList.remove('active');
+            redrawViz();
+        }
+
+        function toggleMeasureMode() {
+            vizMeasureMode = !vizMeasureMode;
+            vizMeasureStart = null;
+            vizMeasureEnd = null;
+            const measureBtn = document.getElementById('measureBtn');
+            if (measureBtn) {
+                measureBtn.classList.toggle('active', vizMeasureMode);
+            }
+            const canvas = document.getElementById('vizCanvas');
+            if (canvas) {
+                canvas.style.cursor = vizMeasureMode ? 'crosshair' : 'grab';
+            }
             redrawViz();
         }
 
@@ -1523,7 +1817,7 @@ bo1,556625.394,715058.507,2.16"></textarea>
             link.click();
         }
 
-        function drawVisualization(result) {
+        function drawVisualization(result, animProgress = 1) {
             const canvas = document.getElementById('vizCanvas');
             if (!canvas) {
                 console.log('Canvas not found');
@@ -1532,6 +1826,10 @@ bo1,556625.394,715058.507,2.16"></textarea>
             
             const container = canvas.parentElement;
             const ctx = canvas.getContext('2d');
+            
+            // Easing function for smooth animation
+            const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+            const anim = easeOutCubic(animProgress);
             
             // Check toggles
             const showAdjustedToggle = document.getElementById('showAdjustedToggle');
@@ -1581,11 +1879,14 @@ bo1,556625.394,715058.507,2.16"></textarea>
                 maxN = Math.max(maxN, p.northing);
             });
             
+            // Store original bounds for minimap
+            const origMinE = minE, origMaxE = maxE, origMinN = minN, origMaxN = maxN;
+            
             // Add buffer and apply zoom
             const rangeE = (maxE - minE || 1) / vizZoomLevel;
             const rangeN = (maxN - minN || 1) / vizZoomLevel;
-            const centerE = (maxE + minE) / 2;
-            const centerN = (maxN + minN) / 2;
+            const centerE = (maxE + minE) / 2 + vizPanX;
+            const centerN = (maxN + minN) / 2 + vizPanY;
             const buffer = Math.max(rangeE, rangeN) * 0.1;
             minE = centerE - rangeE / 2 - buffer;
             maxE = centerE + rangeE / 2 + buffer;
@@ -1817,52 +2118,68 @@ bo1,556625.394,715058.507,2.16"></textarea>
                 if (hasShadow) ctx.restore();
             }
             
-            // Draw detail points first (below others)
-            points.filter(p => p.survey_type === 'detail').forEach(p => {
+            // Draw detail points first (below others) with animation
+            points.filter(p => p.survey_type === 'detail').forEach((p, i, arr) => {
+                const pointAnim = Math.max(0, Math.min(1, (anim * arr.length - i * 0.3) / 0.7));
+                if (pointAnim <= 0) return;
                 const x = scaleX(p.easting);
                 const y = scaleY(p.northing);
                 const isFlagged = flaggedIds.has(p.point_id);
-                const size = isFlagged ? 7 : 5;
+                const size = (isFlagged ? 7 : 5) * pointAnim;
                 const colorObj = isFlagged ? flaggedColor : colors.detail;
+                ctx.globalAlpha = pointAnim;
                 drawDiamond(ctx, x, y, size, colorObj, isFlagged);
+                ctx.globalAlpha = 1;
             });
             
-            // Draw traverse points
-            points.filter(p => p.survey_type === 'traverse').forEach(p => {
+            // Draw traverse points with animation
+            points.filter(p => p.survey_type === 'traverse').forEach((p, i, arr) => {
+                const pointAnim = Math.max(0, Math.min(1, (anim * arr.length - i * 0.2) / 0.8));
+                if (pointAnim <= 0) return;
                 const x = scaleX(p.easting);
                 const y = scaleY(p.northing);
                 const isFlagged = flaggedIds.has(p.point_id);
-                const size = isFlagged ? 8 : 6;
+                const size = (isFlagged ? 8 : 6) * pointAnim;
                 const colorObj = isFlagged ? flaggedColor : colors.traverse;
+                ctx.globalAlpha = pointAnim;
                 drawCircle(ctx, x, y, size, colorObj, true);
+                ctx.globalAlpha = 1;
             });
             
-            // Draw control points on top
-            points.filter(p => p.survey_type === 'control').forEach(p => {
+            // Draw control points on top with animation
+            points.filter(p => p.survey_type === 'control').forEach((p, i, arr) => {
+                const pointAnim = Math.max(0, Math.min(1, anim * 1.5));
+                if (pointAnim <= 0) return;
                 const x = scaleX(p.easting);
                 const y = scaleY(p.northing);
                 const isFlagged = flaggedIds.has(p.point_id);
-                const size = isFlagged ? 10 : 8;
+                const size = (isFlagged ? 10 : 8) * pointAnim;
                 const colorObj = isFlagged ? flaggedColor : colors.control;
+                ctx.globalAlpha = pointAnim;
                 drawTriangle(ctx, x, y, size, colorObj, true);
+                ctx.globalAlpha = 1;
             });
             
-            // Draw flagged pulsing rings
-            points.filter(p => flaggedIds.has(p.point_id)).forEach(p => {
-                const x = scaleX(p.easting);
-                const y = scaleY(p.northing);
-                ctx.save();
-                ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 4]);
-                ctx.beginPath();
-                ctx.arc(x, y, 14, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.restore();
-            });
+            // Draw flagged pulsing rings (only when fully animated)
+            if (anim >= 1) {
+                points.filter(p => flaggedIds.has(p.point_id)).forEach(p => {
+                    const x = scaleX(p.easting);
+                    const y = scaleY(p.northing);
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 14, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                });
+            }
             
-            // Draw labels with background for readability
-            if (showLabels) {
+            // Draw labels with background for readability (only when fully animated)
+            if (showLabels && anim >= 0.8) {
+                const labelAnim = (anim - 0.8) / 0.2;
+                ctx.globalAlpha = labelAnim;
                 ctx.font = '10px -apple-system, sans-serif';
                 points.forEach(p => {
                     const x = scaleX(p.easting);
@@ -1880,6 +2197,7 @@ bo1,556625.394,715058.507,2.16"></textarea>
                     ctx.textAlign = 'left';
                     ctx.fillText(label, x + size + 4, y + 3);
                 });
+                ctx.globalAlpha = 1;
             }
             
             // Axis titles
@@ -2042,6 +2360,17 @@ bo1,556625.394,715058.507,2.16"></textarea>
                 isFlagged: flaggedIds.has(p.point_id)
             }));
             canvas._result = result;
+            canvas._bounds = { minE, maxE, minN, maxN, origMinE, origMaxE, origMinN, origMaxN, metersPerPixel };
+            
+            // Draw minimap when zoomed
+            if (vizZoomLevel > 1.1) {
+                drawMinimap(ctx, points, width, height, padding, origMinE, origMaxE, origMinN, origMaxN, minE, maxE, minN, maxN, flaggedIds);
+            }
+            
+            // Draw measurement line if active
+            if (vizMeasureStart && vizMeasureEnd) {
+                drawMeasurement(ctx, vizMeasureStart, vizMeasureEnd, metersPerPixel);
+            }
             
             // Add event handlers if not already added
             if (!canvas._handlersAdded) {
@@ -2049,7 +2378,152 @@ bo1,556625.394,715058.507,2.16"></textarea>
                 canvas.addEventListener('click', handleCanvasClick);
                 canvas.addEventListener('mousemove', handleCanvasHover);
                 canvas.addEventListener('mouseleave', hideVizTooltip);
+                canvas.addEventListener('mousedown', handleCanvasMouseDown);
+                canvas.addEventListener('mouseup', handleCanvasMouseUp);
+                canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
             }
+        }
+        
+        function drawMinimap(ctx, points, width, height, padding, origMinE, origMaxE, origMinN, origMaxN, viewMinE, viewMaxE, viewMinN, viewMaxN, flaggedIds) {
+            const mmWidth = 120;
+            const mmHeight = 80;
+            const mmX = width - mmWidth - 15;
+            const mmY = height - mmHeight - 55;
+            const mmPadding = 8;
+            
+            // Background
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.fillRect(mmX, mmY, mmWidth, mmHeight);
+            ctx.restore();
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(mmX, mmY, mmWidth, mmHeight);
+            
+            // Scale for minimap
+            const origRangeE = origMaxE - origMinE || 1;
+            const origRangeN = origMaxN - origMinN || 1;
+            const mmScaleX = (e) => mmX + mmPadding + ((e - origMinE) / origRangeE) * (mmWidth - 2 * mmPadding);
+            const mmScaleY = (n) => mmY + mmHeight - mmPadding - ((n - origMinN) / origRangeN) * (mmHeight - 2 * mmPadding);
+            
+            // Draw all points as tiny dots
+            points.forEach(p => {
+                const x = mmScaleX(p.easting);
+                const y = mmScaleY(p.northing);
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = flaggedIds.has(p.point_id) ? '#ef4444' : 
+                    p.survey_type === 'control' ? '#22c55e' : 
+                    p.survey_type === 'traverse' ? '#3b82f6' : '#94a3b8';
+                ctx.fill();
+            });
+            
+            // Draw viewport rectangle
+            const vpX1 = mmScaleX(viewMinE);
+            const vpY1 = mmScaleY(viewMaxN);
+            const vpX2 = mmScaleX(viewMaxE);
+            const vpY2 = mmScaleY(viewMinN);
+            ctx.strokeStyle = '#2563eb';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(vpX1, vpY1, vpX2 - vpX1, vpY2 - vpY1);
+            ctx.fillStyle = 'rgba(37, 99, 235, 0.1)';
+            ctx.fillRect(vpX1, vpY1, vpX2 - vpX1, vpY2 - vpY1);
+            
+            // Label
+            ctx.fillStyle = '#64748b';
+            ctx.font = '9px -apple-system, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Overview', mmX + 4, mmY + 10);
+        }
+        
+        function drawMeasurement(ctx, start, end, metersPerPixel) {
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const pixelDist = Math.sqrt(dx * dx + dy * dy);
+            const meterDist = pixelDist * metersPerPixel;
+            
+            // Draw line
+            ctx.save();
+            ctx.setLineDash([6, 4]);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw endpoints
+            [start, end].forEach(pt => {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#f59e0b';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+            
+            // Draw distance label
+            const midX = (start.x + end.x) / 2;
+            const midY = (start.y + end.y) / 2;
+            const angle = Math.atan2(dy, dx);
+            const bearing = ((90 - angle * 180 / Math.PI) + 360) % 360;
+            
+            const label = `${meterDist.toFixed(3)} m`;
+            const bearingLabel = `${bearing.toFixed(1)}°`;
+            
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.95)';
+            ctx.beginPath();
+            ctx.roundRect(midX - 45, midY - 28, 90, 36, 6);
+            ctx.fill();
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, midX, midY - 12);
+            ctx.font = '10px -apple-system, sans-serif';
+            ctx.fillText(`Bearing: ${bearingLabel}`, midX, midY + 4);
+            ctx.restore();
+        }
+        
+        function handleCanvasMouseDown(e) {
+            const canvas = e.target;
+            
+            if (vizMeasureMode) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                if (!vizMeasureStart) {
+                    vizMeasureStart = { x, y };
+                    vizMeasureEnd = null;
+                } else {
+                    vizMeasureEnd = { x, y };
+                    redrawViz();
+                }
+                return;
+            }
+            
+            vizIsDragging = true;
+            vizDragStart = { x: e.clientX, y: e.clientY, panX: vizPanX, panY: vizPanY };
+            canvas.style.cursor = 'grabbing';
+        }
+        
+        function handleCanvasMouseUp(e) {
+            if (vizIsDragging) {
+                vizIsDragging = false;
+                const canvas = document.getElementById('vizCanvas');
+                if (canvas) canvas.style.cursor = vizMeasureMode ? 'crosshair' : 'grab';
+            }
+        }
+        
+        function handleCanvasWheel(e) {
+            e.preventDefault();
+            const factor = e.deltaY > 0 ? 0.9 : 1.1;
+            vizZoom(factor);
         }
         
         function handleCanvasHover(e) {
@@ -2057,6 +2531,48 @@ bo1,556625.394,715058.507,2.16"></textarea>
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
+            
+            // Update coordinate display
+            const coordsEl = document.getElementById('vizCoords');
+            const hintEl = document.getElementById('vizMeasureHint');
+            if (canvas._bounds && coordsEl) {
+                const bounds = canvas._bounds;
+                const easting = bounds.minE + (x - 65) / (rect.width - 130) * (bounds.maxE - bounds.minE);
+                const northing = bounds.maxN - (y - 65) / (rect.height - 130) * (bounds.maxN - bounds.minN);
+                coordsEl.textContent = `E: ${easting.toFixed(3)}  N: ${northing.toFixed(3)}`;
+                coordsEl.classList.add('visible');
+            }
+            
+            // Show measure hint
+            if (hintEl) {
+                if (vizMeasureMode && !vizMeasureStart) {
+                    hintEl.textContent = '📏 Click to set start point';
+                    hintEl.classList.add('visible');
+                } else if (vizMeasureMode && vizMeasureStart) {
+                    hintEl.textContent = '📏 Click to set end point';
+                    hintEl.classList.add('visible');
+                } else {
+                    hintEl.classList.remove('visible');
+                }
+            }
+            
+            // Handle dragging
+            if (vizIsDragging && canvas._bounds) {
+                const dx = e.clientX - vizDragStart.x;
+                const dy = e.clientY - vizDragStart.y;
+                const mpp = canvas._bounds.metersPerPixel;
+                vizPanX = vizDragStart.panX - dx * mpp;
+                vizPanY = vizDragStart.panY + dy * mpp;
+                redrawViz();
+                return;
+            }
+            
+            // Handle measure mode preview
+            if (vizMeasureMode && vizMeasureStart && !vizMeasureEnd) {
+                vizMeasureEnd = { x, y };
+                redrawViz();
+                vizMeasureEnd = null;
+            }
             
             if (!canvas._pointPositions) return;
             
@@ -2099,6 +2615,10 @@ bo1,556625.394,715058.507,2.16"></textarea>
         function hideVizTooltip() {
             const tooltip = document.getElementById('vizTooltip');
             if (tooltip) tooltip.classList.remove('visible');
+            const coordsEl = document.getElementById('vizCoords');
+            if (coordsEl) coordsEl.classList.remove('visible');
+            const hintEl = document.getElementById('vizMeasureHint');
+            if (hintEl) hintEl.classList.remove('visible');
         }
         
         function handleCanvasClick(e) {

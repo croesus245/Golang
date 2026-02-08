@@ -1,2272 +1,369 @@
 ================================================================================
-                    SURVEY DATA VALIDATOR - COMPLETE DOCUMENTATION
+                         SURVEY DATA VALIDATOR
+                    Professional Land Survey QC Tool
 ================================================================================
 
-                          How The Application Works
-                    A Comprehensive Technical Explanation
+                    "Catch errors before they become problems"
 
 ================================================================================
-                              TABLE OF CONTENTS
+                              WHAT IS THIS?
 ================================================================================
 
-1.  APPLICATION OVERVIEW
-2.  PROJECT STRUCTURE
-3.  DATA MODELS (models/ package)
-    3.1  SurveyPoint Structure
-    3.2  SurveyData Structure
-    3.3  ValidationReport Structure
-    3.4  ValidationIssue Structure
-    3.5  SummaryStatistics Structure
-4.  VALIDATION ENGINE (engine/ package)
-    4.1  Engine Architecture
-    4.2  Concurrent Processing
-    4.3  Check Registration
-5.  DOMAIN LOGIC (domain/ package)
-    5.1  Input Validation
-    5.2  Duplicate Detection
-    5.3  Outlier Detection
-    5.4  Distance and Bearing Checks
-    5.5  Traverse Closure Analysis
-    5.6  Spatial Calculations
-    5.7  Summary Statistics
-6.  API LAYER (api/ package)
-    6.1  Validate Endpoint
-    6.2  Health Endpoint
-    6.3  Request/Response Flow
-7.  FRONTEND (public/index.html)
-    7.1  User Interface
-    7.2  JavaScript Functions
-    7.3  API Communication
-8.  VERCEL DEPLOYMENT
-    8.1  Configuration
-    8.2  Serverless Functions
-    8.3  Routing
-9.  COMPLETE DATA FLOW
-    9.1  User Input to Response
-    9.2  Validation Pipeline
-10. MATHEMATICAL FORMULAS
-11. THRESHOLD VALUES AND CONSTANTS
-12. ERROR HANDLING
-13. CONFIDENCE SCORE CALCULATION
+Survey Data Validator is a web-based quality control tool designed specifically
+for land surveyors, civil engineers, and geospatial professionals. It takes
+raw survey coordinate data and performs automated validation checks to detect
+common errors BEFORE that data gets used in construction, mapping, or legal
+boundary work.
+
+Think of it as a spell-checker for coordinates. You wouldn't submit a legal
+document without spell-checking it first—this tool does the same thing for
+your survey data.
 
 ================================================================================
-1. APPLICATION OVERVIEW
+                           WHY DOES IT EXIST?
 ================================================================================
 
-The Survey Data Validator is a web application designed for land surveyors to
-validate their survey coordinate data. It performs automated quality checks on
-survey points to detect common errors before the data is used in mapping or
-construction projects.
+Survey errors are expensive. A missed duplicate point can cause confusion on
+site. A traverse that doesn't close properly might indicate a blown setup or
+misread rod. An outlier could be a typo or a GPS glitch. These errors, when
+caught late, can cost thousands of dollars to fix and weeks of delay.
 
-PRIMARY FUNCTIONS:
-- Validate survey point coordinates (Easting, Northing, Height)
-- Detect duplicate or near-duplicate points
-- Identify statistical outliers
-- Check traverse geometry (distances and bearings)
-- Calculate traverse closure precision
-- Generate a comprehensive validation report with confidence score
+This tool catches these issues in seconds, right after data collection, when
+fixing them is still cheap and easy.
 
-TECHNOLOGY STACK:
-- Backend: Go 1.21 (Golang)
-- Frontend: HTML5, CSS3, Vanilla JavaScript
-- Deployment: Vercel Serverless Platform
-- API: RESTful JSON API
+Real-world problems this tool catches:
+
+    ❌ Duplicated point IDs (same name, different coordinates)
+    ❌ Near-duplicate points (two shots at basically the same spot)
+    ❌ Traverse misclosure beyond acceptable tolerance
+    ❌ Outlier points that are statistically suspicious
+    ❌ Missing or malformed coordinate data
+    ❌ Invalid point types or naming
 
 ================================================================================
-2. PROJECT STRUCTURE
+                        HOW DOES IT WORK?
 ================================================================================
 
-survey-validator/
-│
-├── api/                          # API handlers
-│   ├── health/
-│   │   └── index.go              # Health check endpoint (Vercel serverless)
-│   ├── validate/
-│   │   └── index.go              # Validation endpoint (Vercel serverless)
-│   ├── request.go                # Request validation utilities
-│   └── server.go                 # Local development server
-│
-├── cmd/
-│   └── server/
-│       └── main.go               # Local development entry point
-│
-├── domain/                       # Business logic layer
-│   ├── spatial.go                # Spatial/geometric calculations
-│   ├── traverse.go               # Traverse-specific validations
-│   ├── validators.go             # Core validation functions
-│   ├── spatial_test.go           # Unit tests for spatial functions
-│   └── validators_test.go        # Unit tests for validators
-│
-├── engine/                       # Validation orchestration
-│   ├── engine.go                 # Main validation engine
-│   └── engine_test.go            # Engine unit tests
-│
-├── models/                       # Data structures
-│   ├── point.go                  # SurveyPoint and SurveyData models
-│   ├── report.go                 # ValidationReport and related types
-│   └── models_test.go            # Model unit tests
-│
-├── public/                       # Static files (served by Vercel)
-│   └── index.html                # Frontend user interface
-│
-├── static/                       # Original static files (local dev)
-│   └── index.html                # Copy of frontend
-│
-├── testdata/                     # Test data files
-│   ├── sample_survey.json        # Valid sample data
-│   ├── sample_with_errors.json   # Sample with validation errors
-│   └── my_survey.json            # User test data
-│
-├── go.mod                        # Go module definition
-├── vercel.json                   # Vercel deployment configuration
-├── .gitignore                    # Git ignore rules
-└── README.md                     # Project readme
+1. INPUT YOUR DATA
+   - Paste CSV directly from Excel or survey software
+   - Upload a .csv or .txt file
+   - Enter points manually in the table
+   - Supports headerless data with smart column detection
+
+2. CHOOSE YOUR TOLERANCE
+   - Survey Grade (1mm) — for precise control work
+   - Engineering (1cm) — for typical construction surveys
+   - Mapping (10cm) — for GIS and reconnaissance work
+
+3. RUN VALIDATION
+   The engine performs 8+ concurrent checks in parallel:
+   
+   ✓ Input Validation — Are coordinates valid numbers?
+   ✓ Duplicate Detection — Same point ID used twice?
+   ✓ Near-Duplicate Analysis — Two points within 1cm?
+   ✓ Outlier Detection — Points far from the centroid?
+   ✓ Traverse Geometry — Are legs reasonable length?
+   ✓ Traverse Closure — Does it close mathematically?
+   ✓ Bearing Analysis — Any suspicious angle jumps?
+   ✓ Statistical Summary — Overall data health metrics
+
+4. GET YOUR REPORT
+   - Overall PASS / WARNING / FAIL status
+   - Confidence score (0-100%)
+   - Interactive visualization with zoom, pan, measure
+   - Click any issue to jump to the source row
+   - Export as JSON, CSV, or PNG plot
 
 ================================================================================
-3. DATA MODELS (models/ package)
+                    TRAVERSE CLOSURE EXPLAINED
 ================================================================================
 
-The models package defines all data structures used throughout the application.
+When you run a traverse, you start at a known point and take a series of
+shots, eventually returning to the starting point (closed traverse) or to
+another known control point (link traverse).
 
---------------------------------------------------------------------------------
-3.1 SurveyPoint Structure
---------------------------------------------------------------------------------
+Due to measurement errors, you never close perfectly. The MISCLOSURE is the
+difference between where you should be and where your measurements say you are.
 
-Location: models/point.go
+                    Start (Known) ──→ T2 ──→ T3 ──→ T4
+                         ↑                              ↓
+                         └────────── T6 ←── T5 ←───────┘
+                                      ↑
+                               Computed end
+                               (should be exactly Start)
 
-The SurveyPoint represents a single surveyed point in 2D/3D space.
+CLOSURE RATIO expresses misclosure relative to total distance:
 
-    type SurveyPoint struct {
-        PointID          string     `json:"point_id"`
-        Easting          float64    `json:"easting"`
-        Northing         float64    `json:"northing"`
-        Height           *float64   `json:"height,omitempty"`
-        SurveyType       SurveyType `json:"survey_type"`
-        CoordinateSystem string     `json:"coordinate_system,omitempty"`
-    }
+    Closure Ratio = Total Traverse Length ÷ Linear Misclosure
 
-FIELD EXPLANATIONS:
+Example:
+    - Total length walked: 500 meters
+    - Misclosure: 0.05 meters (50mm)
+    - Ratio = 500 / 0.05 = 10,000
+    - Expressed as "1:10,000" — meaning 1mm error per 10m of traverse
 
-PointID (string):
-    - Unique identifier for the survey point
-    - Examples: "P1", "BM1", "T5", "STN-001"
-    - Used to reference points in error messages
-    - Required field - empty PointID triggers validation error
-
-Easting (float64):
-    - The X-coordinate in a projected coordinate system
-    - Measured in meters from the coordinate system origin
-    - Also called "X" or "E" in survey terminology
-    - Typically 6-7 digit numbers (e.g., 500000.000)
-    - Zero value triggers a warning
-
-Northing (float64):
-    - The Y-coordinate in a projected coordinate system
-    - Measured in meters from the coordinate system origin
-    - Also called "Y" or "N" in survey terminology
-    - Typically 7 digit numbers (e.g., 6000000.000)
-    - Zero value triggers a warning
-
-Height (*float64):
-    - POINTER to float64, allowing nil (no height recorded)
-    - The Z-coordinate (elevation/altitude)
-    - Measured in meters above a reference datum
-    - Optional - many surveys only record 2D coordinates
-    - Used in 3D distance calculations if present
-
-SurveyType (SurveyType enum):
-    - Categorizes the point for different processing
-    - Possible values:
-        * "traverse"  - Points forming a traverse network
-        * "control"   - Known control/benchmark points
-        * "detail"    - Detail survey points
-    - Traverse points are used for closure calculations
-    - Control points are reference points with known coordinates
-
-CoordinateSystem (string):
-    - Optional identifier for the coordinate reference system
-    - Examples: "UTM Zone 55S", "MGA2020", "WGS84"
-    - Currently informational only (not used in calculations)
-
-METHODS:
-
-    func (p *SurveyPoint) IsValid() bool
-        - Returns true if PointID is not empty AND
-          Easting is not zero AND Northing is not zero
-        - Quick validity check for basic requirements
-
-    func (p *SurveyPoint) HasHeight() bool
-        - Returns true if Height pointer is not nil
-        - Used to determine if 3D calculations are possible
-
---------------------------------------------------------------------------------
-3.2 SurveyData Structure
---------------------------------------------------------------------------------
-
-Location: models/point.go
-
-The SurveyData is the top-level container for all survey data submitted for
-validation.
-
-    type SurveyData struct {
-        ProjectID        string        `json:"project_id"`
-        CoordinateSystem string        `json:"coordinate_system,omitempty"`
-        Points           []SurveyPoint `json:"points"`
-    }
-
-FIELD EXPLANATIONS:
-
-ProjectID (string):
-    - Identifier for the survey project
-    - Included in the validation report
-    - Can be auto-generated (e.g., "Survey-2026-02-01")
-    - Helps track which project the validation relates to
-
-CoordinateSystem (string):
-    - Default coordinate system for all points
-    - Can be overridden at the individual point level
-    - Optional field
-
-Points ([]SurveyPoint):
-    - Array of all survey points to validate
-    - Must contain at least 1 point
-    - Order matters for traverse analysis (sequential)
-    - Typical surveys have 5-500 points
-
---------------------------------------------------------------------------------
-3.3 ValidationReport Structure
---------------------------------------------------------------------------------
-
-Location: models/report.go
-
-The ValidationReport is the complete output of the validation process.
-
-    type ValidationReport struct {
-        ProjectID       string            `json:"project_id"`
-        Timestamp       time.Time         `json:"timestamp"`
-        Status          ValidationStatus  `json:"status"`
-        ConfidenceScore float64           `json:"confidence_score"`
-        Summary         SummaryStatistics `json:"summary"`
-        Issues          []ValidationIssue `json:"issues"`
-        ChecksPerformed []string          `json:"checks_performed"`
-        ProcessingTime  string            `json:"processing_time"`
-    }
-
-FIELD EXPLANATIONS:
-
-ProjectID (string):
-    - Echoes back the ProjectID from input
-    - Links report to original data
-
-Timestamp (time.Time):
-    - When the validation was performed
-    - Formatted as ISO 8601 in JSON output
-    - Example: "2026-02-01T15:04:05Z"
-
-Status (ValidationStatus enum):
-    - Overall validation result
-    - Possible values:
-        * "PASS"    - No errors or warnings
-        * "WARNING" - Has warnings but no errors
-        * "FAIL"    - Has one or more errors
-    - Determined by the highest severity issue found
-
-ConfidenceScore (float64):
-    - Quality score from 0 to 100
-    - 100 = perfect (no issues)
-    - Decreases based on number and severity of issues
-    - See Section 13 for calculation formula
-
-Summary (SummaryStatistics):
-    - Statistical summary of the survey data
-    - See Section 3.5 for details
-
-Issues ([]ValidationIssue):
-    - Array of all problems found
-    - Empty array if no issues
-    - See Section 3.4 for structure
-
-ChecksPerformed ([]string):
-    - List of validation check names that ran
-    - Example: ["input_validation", "duplicate_detection", ...]
-    - Useful for debugging and auditing
-
-ProcessingTime (string):
-    - How long validation took
-    - Formatted as Go duration
-    - Example: "15.234ms"
-
-METHODS:
-
-    func NewValidationReport(projectID string) *ValidationReport
-        - Constructor function
-        - Initializes with:
-            * Status = PASS (default)
-            * Timestamp = current time
-            * Empty Issues slice
-
-    func (r *ValidationReport) AddIssue(issue ValidationIssue)
-        - Adds an issue to the report
-        - Updates Status based on severity:
-            * Error severity → Status = FAIL
-            * Warning severity → Status = WARNING (if not already FAIL)
-            * Info severity → No status change
-
-    func (r *ValidationReport) CalculateConfidenceScore()
-        - Calculates the confidence score
-        - Called after all issues are added
-        - See Section 13 for algorithm
-
---------------------------------------------------------------------------------
-3.4 ValidationIssue Structure
---------------------------------------------------------------------------------
-
-Location: models/report.go
-
-A ValidationIssue represents a single problem found during validation.
-
-    type ValidationIssue struct {
-        CheckName   string        `json:"check_name"`
-        Severity    IssueSeverity `json:"severity"`
-        PointIDs    []string      `json:"point_ids,omitempty"`
-        Description string        `json:"description"`
-        Details     interface{}   `json:"details,omitempty"`
-    }
-
-FIELD EXPLANATIONS:
-
-CheckName (string):
-    - Which validation check produced this issue
-    - Examples:
-        * "input_validation"
-        * "duplicate_detection"
-        * "outlier_detection"
-        * "distance_bearing_check"
-        * "traverse_closure"
-
-Severity (IssueSeverity enum):
-    - How serious the issue is
-    - Possible values:
-        * "error"   - Must be fixed, data is invalid
-        * "warning" - Should be reviewed, may be intentional
-        * "info"    - Informational, no action required
-
-PointIDs ([]string):
-    - Which points are involved in this issue
-    - Can be empty, single point, or multiple points
-    - Examples:
-        * [] - General issue not point-specific
-        * ["P1"] - Issue with one point
-        * ["P1", "P2"] - Issue between two points
-
-Description (string):
-    - Human-readable explanation of the issue
-    - Displayed directly to the user
-    - Examples:
-        * "Duplicate points: P1 and P2 (0.0001m apart)"
-        * "Point P5 may be an outlier (150.2m from centroid)"
-
-Details (interface{}):
-    - Additional structured data about the issue
-    - Type varies by check (map, struct, or nil)
-    - Examples:
-        * {"distance": 0.0001}
-        * TraverseClosureDetails struct
-
---------------------------------------------------------------------------------
-3.5 SummaryStatistics Structure
---------------------------------------------------------------------------------
-
-Location: models/report.go
-
-SummaryStatistics provides an overview of the survey data.
-
-    type SummaryStatistics struct {
-        TotalPoints      int     `json:"total_points"`
-        TraversePoints   int     `json:"traverse_points"`
-        ControlPoints    int     `json:"control_points"`
-        DetailPoints     int     `json:"detail_points"`
-        PointsWithHeight int     `json:"points_with_height"`
-        BoundingBox      BBox    `json:"bounding_box"`
-        CentroidEasting  float64 `json:"centroid_easting"`
-        CentroidNorthing float64 `json:"centroid_northing"`
-    }
-
-    type BBox struct {
-        MinEasting  float64 `json:"min_easting"`
-        MaxEasting  float64 `json:"max_easting"`
-        MinNorthing float64 `json:"min_northing"`
-        MaxNorthing float64 `json:"max_northing"`
-    }
-
-FIELD EXPLANATIONS:
-
-TotalPoints:
-    - Total number of points in the survey
-    - Count of all points regardless of type
-
-TraversePoints:
-    - Number of points with SurveyType = "traverse"
-
-ControlPoints:
-    - Number of points with SurveyType = "control"
-
-DetailPoints:
-    - Number of points with SurveyType = "detail"
-
-PointsWithHeight:
-    - Count of points that have height values
-    - Points where Height != nil
-
-BoundingBox:
-    - The rectangular extent of all points
-    - MinEasting: Smallest X coordinate
-    - MaxEasting: Largest X coordinate
-    - MinNorthing: Smallest Y coordinate
-    - MaxNorthing: Largest Y coordinate
-    - Useful for visualization and extent checking
-
-CentroidEasting:
-    - X coordinate of the geometric center
-    - Average of all Easting values
-
-CentroidNorthing:
-    - Y coordinate of the geometric center
-    - Average of all Northing values
+Industry standards:
+    ┌──────────────────┬───────────────┬─────────────────────────────────┐
+    │ Rating           │ Ratio         │ Use Case                        │
+    ├──────────────────┼───────────────┼─────────────────────────────────┤
+    │ Excellent        │ 1:10,000+     │ Control networks, legal bounds  │
+    │ Good             │ 1:5,000+      │ Construction, boundary retraces │
+    │ Acceptable       │ 1:3,000+      │ Preliminary work, topo surveys  │
+    │ Poor             │ <1:3,000      │ Needs investigation             │
+    └──────────────────┴───────────────┴─────────────────────────────────┘
 
 ================================================================================
-4. VALIDATION ENGINE (engine/ package)
+                    BOWDITCH ADJUSTMENT EXPLAINED
 ================================================================================
 
-The engine package orchestrates all validation checks and produces the final
-report.
+When your traverse has acceptable misclosure, you can ADJUST it to make it
+close perfectly. The Bowditch method (also called Compass Rule) distributes
+the error proportionally based on leg distances.
 
---------------------------------------------------------------------------------
-4.1 Engine Architecture
---------------------------------------------------------------------------------
+The idea: longer legs contribute more to total error, so they get more of
+the correction.
 
-Location: engine/engine.go
+For each point:
 
-The Engine is the central coordinator that runs all validation checks.
+    Easting Correction = (Leg Distance / Total Distance) × ΔE misclosure
+    Northing Correction = (Leg Distance / Total Distance) × ΔN misclosure
 
-    type ValidationCheck func(data *models.SurveyData) []models.ValidationIssue
-
-    type Engine struct {
-        checks map[string]ValidationCheck
-    }
-
-DESIGN PATTERN:
-
-The engine uses the Strategy Pattern:
-- Each validation check is a function with the same signature
-- Checks are registered by name
-- Engine runs all registered checks
-- New checks can be added without modifying the engine
-
-TYPE DEFINITIONS:
-
-ValidationCheck:
-    - Function type (first-class function)
-    - Takes: pointer to SurveyData
-    - Returns: slice of ValidationIssue (can be empty)
-    - Each check is independent and self-contained
-
-Engine struct:
-    - checks: Map from check name (string) to check function
-    - Uses map for O(1) lookup and flexible registration
-
---------------------------------------------------------------------------------
-4.2 Concurrent Processing
---------------------------------------------------------------------------------
-
-Location: engine/engine.go, Validate() method
-
-The engine runs all validation checks concurrently for performance.
-
-    func (e *Engine) Validate(data *models.SurveyData) *models.ValidationReport {
-        startTime := time.Now()
-
-        report := models.NewValidationReport(data.ProjectID)
-        resultChan := make(chan checkResult, len(e.checks))
-        var wg sync.WaitGroup
-
-        // Launch all checks concurrently
-        for name, check := range e.checks {
-            wg.Add(1)
-            go func(checkName string, checkFunc ValidationCheck) {
-                defer wg.Done()
-                issues := checkFunc(data)
-                resultChan <- checkResult{
-                    checkName: checkName,
-                    issues:    issues,
-                }
-            }(name, check)
-        }
-
-        // Close channel when all checks complete
-        go func() {
-            wg.Wait()
-            close(resultChan)
-        }()
-
-        // Collect results
-        for result := range resultChan {
-            report.ChecksPerformed = append(report.ChecksPerformed, result.checkName)
-            for _, issue := range result.issues {
-                report.AddIssue(issue)
-            }
-        }
-
-        report.Summary = domain.CalculateSummaryStatistics(data)
-        report.CalculateConfidenceScore()
-        report.ProcessingTime = time.Since(startTime).String()
-
-        return report
-    }
-
-CONCURRENCY EXPLAINED:
-
-1. GOROUTINES (go func(...)):
-   - Each validation check runs in its own goroutine
-   - Goroutines are lightweight threads managed by Go runtime
-   - 5 checks = 5 goroutines running simultaneously
-
-2. CHANNELS (resultChan):
-   - Thread-safe communication between goroutines
-   - Buffered channel with capacity = number of checks
-   - Each goroutine sends its results to the channel
-
-3. WAITGROUP (wg):
-   - Synchronization primitive
-   - wg.Add(1): Increment counter before starting goroutine
-   - wg.Done(): Decrement counter when goroutine finishes
-   - wg.Wait(): Block until counter reaches zero
-
-4. FLOW:
-   a. Create buffered channel
-   b. Launch all goroutines (wg.Add(1) + go func)
-   c. Separate goroutine waits for all to finish, then closes channel
-   d. Main thread reads from channel until closed
-   e. All results collected safely without race conditions
-
-PERFORMANCE BENEFIT:
-- Sequential: 5 checks × 10ms each = 50ms
-- Concurrent: 5 checks simultaneously ≈ 10-15ms
-- Speedup: 3-5x faster for typical surveys
-
---------------------------------------------------------------------------------
-4.3 Check Registration
---------------------------------------------------------------------------------
-
-Location: engine/engine.go, NewEngine() function
-
-    func NewEngine() *Engine {
-        e := &Engine{
-            checks: make(map[string]ValidationCheck),
-        }
-
-        // Register all validation checks
-        e.RegisterCheck("input_validation", domain.ValidateInput)
-        e.RegisterCheck("duplicate_detection", domain.DetectDuplicates)
-        e.RegisterCheck("distance_bearing_check", domain.CheckDistanceAndBearing)
-        e.RegisterCheck("outlier_detection", domain.DetectOutliers)
-        e.RegisterCheck("traverse_closure", domain.CheckTraverseClosure)
-
-        return e
-    }
-
-REGISTERED CHECKS:
-
-1. input_validation
-   - Validates basic input requirements
-   - Checks for empty PointIDs, zero coordinates
-   - Validates SurveyType values
-
-2. duplicate_detection
-   - Finds points at the same or very close locations
-   - Uses distance threshold to classify duplicates
-
-3. distance_bearing_check
-   - Analyzes traverse geometry
-   - Checks for unusually short legs
-   - Detects large bearing changes
-
-4. outlier_detection
-   - Statistical analysis for outlier points
-   - Uses standard deviation to identify anomalies
-
-5. traverse_closure
-   - Calculates misclosure for closed traverses
-   - Determines survey precision
-
-ADDING A NEW CHECK:
-
-    e.RegisterCheck("my_new_check", myNewCheckFunction)
-
-Where myNewCheckFunction has signature:
-    func myNewCheckFunction(data *models.SurveyData) []models.ValidationIssue
+After adjustment, the traverse closes exactly to zero misclosure. The
+"Adjusted Coordinates" toggle on the visualization shows these corrected
+positions overlaid on the original data.
 
 ================================================================================
-5. DOMAIN LOGIC (domain/ package)
+                         CONFIDENCE SCORE
 ================================================================================
 
-The domain package contains all validation logic and calculations.
+The confidence score (0-100%) represents overall data quality. It's NOT a
+statistical confidence interval—it's a heuristic based on:
 
---------------------------------------------------------------------------------
-5.1 Input Validation
---------------------------------------------------------------------------------
-
-Location: domain/validators.go, ValidateInput() function
-
-Purpose: Ensure all input data meets basic requirements.
-
-    func ValidateInput(data *models.SurveyData) []models.ValidationIssue
-
-CHECKS PERFORMED:
-
-1. NO POINTS CHECK:
-   - Error if Points array is empty
-   - Message: "No survey points provided"
-   - Severity: ERROR
-
-2. EMPTY POINT ID CHECK:
-   - Error if any point has PointID = ""
-   - Message: "Point found with empty Point ID"
-   - Severity: ERROR
-
-3. ZERO COORDINATES CHECK:
-   - Warning if Easting = 0 AND Northing = 0
-   - Could be valid (origin point) but usually an error
-   - Message: "Point {ID} has zero coordinates"
-   - Severity: WARNING
-
-4. INVALID SURVEY TYPE CHECK:
-   - Warning if SurveyType is not one of: traverse, control, detail
-   - Empty string is allowed (defaults to unspecified)
-   - Message: "Point {ID} has unknown type: {type}"
-   - Severity: WARNING
-
-CODE:
-
-    func ValidateInput(data *models.SurveyData) []models.ValidationIssue {
-        var issues []models.ValidationIssue
-
-        // Check for empty data
-        if len(data.Points) == 0 {
-            issues = append(issues, models.ValidationIssue{
-                CheckName:   "input_validation",
-                Severity:    models.SeverityError,
-                Description: "No survey points provided",
-            })
-            return issues
-        }
-
-        // Check each point
-        for _, p := range data.Points {
-            // Empty PointID
-            if p.PointID == "" {
-                issues = append(issues, models.ValidationIssue{
-                    CheckName:   "input_validation",
-                    Severity:    models.SeverityError,
-                    Description: "Point found with empty Point ID",
-                })
-            }
-
-            // Zero coordinates
-            if p.Easting == 0 && p.Northing == 0 {
-                issues = append(issues, models.ValidationIssue{
-                    CheckName:   "input_validation",
-                    Severity:    models.SeverityWarning,
-                    PointIDs:    []string{p.PointID},
-                    Description: fmt.Sprintf("Point %s has zero coordinates", p.PointID),
-                })
-            }
-
-            // Invalid survey type
-            switch p.SurveyType {
-            case models.SurveyTypeTraverse, models.SurveyTypeControl, 
-                 models.SurveyTypeDetail:
-                // Valid
-            default:
-                if p.SurveyType != "" {
-                    issues = append(issues, models.ValidationIssue{
-                        CheckName:   "input_validation",
-                        Severity:    models.SeverityWarning,
-                        PointIDs:    []string{p.PointID},
-                        Description: fmt.Sprintf("Point %s has unknown type: %s", 
-                            p.PointID, p.SurveyType),
-                    })
-                }
-            }
-        }
-        return issues
-    }
-
---------------------------------------------------------------------------------
-5.2 Duplicate Detection
---------------------------------------------------------------------------------
-
-Location: domain/validators.go, DetectDuplicates() function
-
-Purpose: Find points that are at the same or nearly the same location.
-
-    func DetectDuplicates(data *models.SurveyData) []models.ValidationIssue
-
-THRESHOLDS:
-
-    DuplicateThreshold     = 0.001  // 1 millimeter
-    NearDuplicateThreshold = 0.01   // 1 centimeter
-
-ALGORITHM:
-
-1. Compare every point with every other point (O(n²))
-2. Calculate 2D distance between each pair
-3. Classify based on distance:
-   - < 1mm: Exact duplicate (ERROR)
-   - < 1cm: Near duplicate (WARNING)
-   - >= 1cm: OK (no issue)
-
-WHY O(n²) IS ACCEPTABLE:
-- Typical surveys have 10-500 points
-- 500 points = 124,750 comparisons
-- Each comparison is fast (3 float operations)
-- Total time: < 10ms for 500 points
-
-CODE:
-
-    func DetectDuplicates(data *models.SurveyData) []models.ValidationIssue {
-        var issues []models.ValidationIssue
-        points := data.Points
-
-        // Compare each pair of points
-        for i := 0; i < len(points); i++ {
-            for j := i + 1; j < len(points); j++ {
-                dist := Distance(&points[i], &points[j])
-
-                if dist < DuplicateThreshold {
-                    // Exact duplicate
-                    msg := fmt.Sprintf("Duplicate points: %s and %s (%.4fm apart)",
-                        points[i].PointID, points[j].PointID, dist)
-                    issues = append(issues, models.ValidationIssue{
-                        CheckName:   "duplicate_detection",
-                        Severity:    models.SeverityError,
-                        PointIDs:    []string{points[i].PointID, points[j].PointID},
-                        Description: msg,
-                        Details:     map[string]interface{}{"distance": dist},
-                    })
-                } else if dist < NearDuplicateThreshold {
-                    // Near duplicate
-                    msg := fmt.Sprintf("Near-duplicate points: %s and %s (%.4fm apart)",
-                        points[i].PointID, points[j].PointID, dist)
-                    issues = append(issues, models.ValidationIssue{
-                        CheckName:   "duplicate_detection",
-                        Severity:    models.SeverityWarning,
-                        PointIDs:    []string{points[i].PointID, points[j].PointID},
-                        Description: msg,
-                        Details:     map[string]interface{}{"distance": dist},
-                    })
-                }
-            }
-        }
-        return issues
-    }
-
---------------------------------------------------------------------------------
-5.3 Outlier Detection
---------------------------------------------------------------------------------
-
-Location: domain/validators.go, DetectOutliers() function
-
-Purpose: Identify points that are unusually far from the main cluster.
-
-    func DetectOutliers(data *models.SurveyData) []models.ValidationIssue
-
-THRESHOLD:
-
-    OutlierThreshold = 3.0  // 3 standard deviations
-
-STATISTICAL BASIS:
-
-In a normal distribution:
-- 68% of data within 1 standard deviation
-- 95% of data within 2 standard deviations
-- 99.7% of data within 3 standard deviations
-
-Points beyond 3σ have only 0.3% probability of being legitimate.
-These are flagged as potential outliers for review.
-
-ALGORITHM:
-
-1. Calculate centroid (average position) of all points
-2. Calculate standard deviation of distances from centroid
-3. For each point:
-   a. Calculate distance from centroid
-   b. If distance > 3 × std_dev, flag as outlier
-
-CODE:
-
-    func DetectOutliers(data *models.SurveyData) []models.ValidationIssue {
-        var issues []models.ValidationIssue
-
-        // Need at least 3 points for meaningful statistics
-        if len(data.Points) < 3 {
-            return issues
-        }
-
-        // Calculate centroid
-        cE, cN := Centroid(data.Points)
-        
-        // Calculate standard deviation
-        stdDev := StandardDeviation(data.Points, cE, cN)
-        if stdDev == 0 {
-            return issues  // All points at same location
-        }
-
-        // Define outlier threshold
-        threshold := OutlierThreshold * stdDev
-        centroid := &models.SurveyPoint{Easting: cE, Northing: cN}
-
-        // Check each point
-        for _, p := range data.Points {
-            dist := Distance(centroid, &p)
-            if dist > threshold {
-                msg := fmt.Sprintf("Point %s may be an outlier (%.1fm from centroid)",
-                    p.PointID, dist)
-                issues = append(issues, models.ValidationIssue{
-                    CheckName:   "outlier_detection",
-                    Severity:    models.SeverityWarning,
-                    PointIDs:    []string{p.PointID},
-                    Description: msg,
-                    Details: map[string]interface{}{
-                        "distance":  dist,
-                        "threshold": threshold,
-                    },
-                })
-            }
-        }
-        return issues
-    }
-
---------------------------------------------------------------------------------
-5.4 Distance and Bearing Checks
---------------------------------------------------------------------------------
-
-Location: domain/traverse.go, CheckDistanceAndBearing() function
-
-Purpose: Analyze traverse geometry for suspicious patterns.
-
-    func CheckDistanceAndBearing(data *models.SurveyData) []models.ValidationIssue
-
-THRESHOLDS:
-
-    MinTraverseDistance = 0.1   // 10 centimeters
-    MaxBearingChange    = 170.0 // degrees
-
-CHECKS PERFORMED:
-
-1. VERY SHORT DISTANCE:
-   - Warning if traverse leg < 10cm
-   - May indicate data entry error or duplicate point
-   - Severity: WARNING
-
-2. LARGE BEARING CHANGE:
-   - Warning if direction change > 170°
-   - May indicate point order error or missing point
-   - Severity: WARNING
-
-3. UNUSUAL DISTANCE RATIO:
-   - Info if consecutive distances differ by >10x
-   - Example: 100m leg followed by 5m leg
-   - May be intentional but worth noting
-   - Severity: INFO
-
-ALGORITHM:
-
-1. Filter to only traverse points (ignore control/detail)
-2. Process sequentially (order matters)
-3. For each consecutive pair:
-   a. Calculate distance
-   b. Calculate bearing
-   c. Compare with previous values
-   d. Flag anomalies
-
-CODE:
-
-    func CheckDistanceAndBearing(data *models.SurveyData) []models.ValidationIssue {
-        var issues []models.ValidationIssue
-
-        // Filter traverse points only
-        var traversePoints []models.SurveyPoint
-        for _, p := range data.Points {
-            if p.SurveyType == models.SurveyTypeTraverse {
-                traversePoints = append(traversePoints, p)
-            }
-        }
-
-        // Need at least 2 points
-        if len(traversePoints) < 2 {
-            return issues
-        }
-
-        var prevBearing, prevDist float64
-
-        for i := 1; i < len(traversePoints); i++ {
-            p1 := &traversePoints[i-1]
-            p2 := &traversePoints[i]
-            dist := Distance(p1, p2)
-            bearing := Bearing(p1, p2)
-
-            // Check for very short distance
-            if dist < MinTraverseDistance {
-                issues = append(issues, models.ValidationIssue{
-                    CheckName:   "distance_bearing_check",
-                    Severity:    models.SeverityWarning,
-                    PointIDs:    []string{p1.PointID, p2.PointID},
-                    Description: fmt.Sprintf(
-                        "Very short distance between %s and %s: %.4fm",
-                        p1.PointID, p2.PointID, dist),
-                    Details:     map[string]interface{}{"distance": dist},
-                })
-            }
-
-            // Check bearing change (skip first leg)
-            if i > 1 {
-                change := BearingDifference(bearing, prevBearing)
-                if change > MaxBearingChange {
-                    issues = append(issues, models.ValidationIssue{
-                        CheckName:   "distance_bearing_check",
-                        Severity:    models.SeverityWarning,
-                        PointIDs:    []string{p1.PointID, p2.PointID},
-                        Description: fmt.Sprintf(
-                            "Large bearing change at %s: %.1f°", p1.PointID, change),
-                    })
-                }
-
-                // Check distance ratio
-                if prevDist > 0 {
-                    ratio := dist / prevDist
-                    if ratio > 10 || ratio < 0.1 {
-                        issues = append(issues, models.ValidationIssue{
-                            CheckName:   "distance_bearing_check",
-                            Severity:    models.SeverityInfo,
-                            PointIDs:    []string{p1.PointID, p2.PointID},
-                            Description: fmt.Sprintf(
-                                "Unusual distance ratio at %s: %.1f", p1.PointID, ratio),
-                        })
-                    }
-                }
-            }
-
-            prevBearing = bearing
-            prevDist = dist
-        }
-        return issues
-    }
-
---------------------------------------------------------------------------------
-5.5 Traverse Closure Analysis
---------------------------------------------------------------------------------
-
-Location: domain/traverse.go, CheckTraverseClosure() function
-
-Purpose: Calculate and evaluate traverse closure for closed traverses.
-
-    func CheckTraverseClosure(data *models.SurveyData) []models.ValidationIssue
-
-WHAT IS TRAVERSE CLOSURE:
-
-A traverse is a series of connected survey lines. In a "closed" traverse,
-the surveyor returns to the starting point. Due to measurement errors,
-the end point won't exactly match the start - this difference is the
-"misclosure."
-
-The precision of a traverse is expressed as a ratio:
-    Precision = Total_Length / Misclosure
-
-Example: If a 1000m traverse has 0.05m misclosure:
-    Precision = 1000 / 0.05 = 20,000
-    Expressed as: 1:20000
-
-THRESHOLDS:
-
-    GoodPrecision       = 10000  // 1:10000 or better
-    AcceptablePrecision = 5000   // 1:5000 to 1:10000
-
-PRECISION RATINGS:
-
-    >= 1:10000     Good (typical of quality survey work)
-    1:5000-1:10000 Acceptable (meets most standards)
-    1:1000-1:5000  Poor (may need resurvey)
-    < 1:1000       Unacceptable (definite errors)
-
-ALGORITHM:
-
-1. Filter traverse points only
-2. Check if traverse is closed (first ≈ last point)
-3. Calculate total traverse length
-4. Calculate misclosure (distance from last to first)
-5. Calculate relative precision
-6. Rate the quality
-
-CODE:
-
-    func CheckTraverseClosure(data *models.SurveyData) []models.ValidationIssue {
-        var issues []models.ValidationIssue
-
-        // Filter traverse points
-        var traversePoints []models.SurveyPoint
-        for _, p := range data.Points {
-            if p.SurveyType == models.SurveyTypeTraverse {
-                traversePoints = append(traversePoints, p)
-            }
-        }
-
-        // Need at least 3 points for closure
-        if len(traversePoints) < 3 {
-            return issues
-        }
-
-        first := &traversePoints[0]
-        last := &traversePoints[len(traversePoints)-1]
-        closureDist := Distance(first, last)
-
-        // Calculate total traverse length
-        var totalLen float64
-        for i := 1; i < len(traversePoints); i++ {
-            totalLen += Distance(&traversePoints[i-1], &traversePoints[i])
-        }
-
-        // Check if this is a closed traverse
-        // (closure should be < 10% of total length)
-        if closureDist >= totalLen*0.1 {
-            return issues  // Not a closed traverse
-        }
-
-        // Calculate misclosure components
-        miscE := last.Easting - first.Easting
-        miscN := last.Northing - first.Northing
-        linMisc := math.Sqrt(miscE*miscE + miscN*miscN)
-
-        // Calculate precision
-        var precision float64
-        if linMisc > 0 {
-            precision = totalLen / linMisc
-        } else {
-            precision = math.MaxFloat64  // Perfect closure
-        }
-
-        // Rate quality
-        var quality string
-        var severity models.IssueSeverity
-
-        switch {
-        case precision >= GoodPrecision:
-            quality = "Good (better than 1:10000)"
-            severity = models.SeverityInfo
-        case precision >= AcceptablePrecision:
-            quality = "Acceptable (1:5000 to 1:10000)"
-            severity = models.SeverityInfo
-        case precision >= 1000:
-            quality = "Poor (1:1000 to 1:5000)"
-            severity = models.SeverityWarning
-        default:
-            quality = "Unacceptable (worse than 1:1000)"
-            severity = models.SeverityError
-        }
-
-        // Create issue with detailed closure information
-        issues = append(issues, models.ValidationIssue{
-            CheckName:   "traverse_closure",
-            Severity:    severity,
-            PointIDs:    []string{first.PointID, last.PointID},
-            Description: fmt.Sprintf(
-                "Traverse closure: %.4fm misclosure, 1:%.0f precision (%s)",
-                linMisc, precision, quality),
-            Details: models.TraverseClosureDetails{
-                MisclosureEasting:  miscE,
-                MisclosureNorthing: miscN,
-                LinearMisclosure:   linMisc,
-                TraverseLength:     totalLen,
-                RelativePrecision:  fmt.Sprintf("1:%.0f", precision),
-                Quality:            quality,
-            },
-        })
-        return issues
-    }
-
---------------------------------------------------------------------------------
-5.6 Spatial Calculations
---------------------------------------------------------------------------------
-
-Location: domain/spatial.go
-
-These are the fundamental geometric functions used by validators.
-
-DISTANCE (2D):
-
-    func Distance(p1, p2 *models.SurveyPoint) float64 {
-        dE := p2.Easting - p1.Easting
-        dN := p2.Northing - p1.Northing
-        return math.Sqrt(dE*dE + dN*dN)
-    }
-
-Formula: √((E₂-E₁)² + (N₂-N₁)²)
-
-This is the Euclidean distance in 2D space (horizontal plane).
-
-DISTANCE (3D):
-
-    func Distance3D(p1, p2 *models.SurveyPoint) float64 {
-        if !p1.HasHeight() || !p2.HasHeight() {
-            return Distance(p1, p2)  // Fall back to 2D
-        }
-        dE := p2.Easting - p1.Easting
-        dN := p2.Northing - p1.Northing
-        dH := *p2.Height - *p1.Height
-        return math.Sqrt(dE*dE + dN*dN + dH*dH)
-    }
-
-Formula: √((E₂-E₁)² + (N₂-N₁)² + (H₂-H₁)²)
-
-The slope distance accounting for elevation difference.
-
-BEARING:
-
-    func Bearing(p1, p2 *models.SurveyPoint) float64 {
-        dE := p2.Easting - p1.Easting
-        dN := p2.Northing - p1.Northing
-        bearing := math.Atan2(dE, dN) * 180 / math.Pi
-        if bearing < 0 {
-            bearing += 360
-        }
-        return bearing
-    }
-
-Formula: arctan(ΔE/ΔN) converted to degrees
-
-Returns bearing in degrees from North (0-360):
-- 0° = North
-- 90° = East
-- 180° = South
-- 270° = West
-
-BEARING DIFFERENCE:
-
-    func BearingDifference(b1, b2 float64) float64 {
-        diff := math.Abs(b1 - b2)
-        if diff > 180 {
-            diff = 360 - diff
-        }
-        return diff
-    }
-
-Calculates the smaller angle between two bearings.
-Example: Difference between 350° and 10° is 20° (not 340°).
-
-CENTROID:
-
-    func Centroid(points []models.SurveyPoint) (float64, float64) {
-        if len(points) == 0 {
-            return 0, 0
-        }
-        var sumE, sumN float64
-        for _, p := range points {
-            sumE += p.Easting
-            sumN += p.Northing
-        }
-        n := float64(len(points))
-        return sumE / n, sumN / n
-    }
-
-Formula: (ΣE/n, ΣN/n)
-
-The geometric center (average position) of all points.
-
-STANDARD DEVIATION:
-
-    func StandardDeviation(points []models.SurveyPoint, cE, cN float64) float64 {
-        if len(points) == 0 {
-            return 0
-        }
-        var sum float64
-        for _, p := range points {
-            dE := p.Easting - cE
-            dN := p.Northing - cN
-            sum += dE*dE + dN*dN
-        }
-        return math.Sqrt(sum / float64(len(points)))
-    }
-
-Formula: √(Σ((E-Ē)² + (N-N̄)²) / n)
-
-Measures the spread of points around the centroid.
-
-BOUNDING BOX:
-
-    func BoundingBox(points []models.SurveyPoint) models.BBox {
-        if len(points) == 0 {
-            return models.BBox{}
-        }
-        bbox := models.BBox{
-            MinEasting:  points[0].Easting,
-            MaxEasting:  points[0].Easting,
-            MinNorthing: points[0].Northing,
-            MaxNorthing: points[0].Northing,
-        }
-        for _, p := range points[1:] {
-            if p.Easting < bbox.MinEasting {
-                bbox.MinEasting = p.Easting
-            }
-            if p.Easting > bbox.MaxEasting {
-                bbox.MaxEasting = p.Easting
-            }
-            if p.Northing < bbox.MinNorthing {
-                bbox.MinNorthing = p.Northing
-            }
-            if p.Northing > bbox.MaxNorthing {
-                bbox.MaxNorthing = p.Northing
-            }
-        }
-        return bbox
-    }
-
-Finds the rectangular extent containing all points.
-
---------------------------------------------------------------------------------
-5.7 Summary Statistics
---------------------------------------------------------------------------------
-
-Location: domain/traverse.go, CalculateSummaryStatistics() function
-
-    func CalculateSummaryStatistics(data *models.SurveyData) models.SummaryStatistics {
-        stats := models.SummaryStatistics{TotalPoints: len(data.Points)}
-
-        if len(data.Points) == 0 {
-            return stats
-        }
-
-        // Count by type
-        for _, p := range data.Points {
-            switch p.SurveyType {
-            case models.SurveyTypeTraverse:
-                stats.TraversePoints++
-            case models.SurveyTypeControl:
-                stats.ControlPoints++
-            case models.SurveyTypeDetail:
-                stats.DetailPoints++
-            }
-            if p.HasHeight() {
-                stats.PointsWithHeight++
-            }
-        }
-
-        // Calculate spatial statistics
-        stats.BoundingBox = BoundingBox(data.Points)
-        stats.CentroidEasting, stats.CentroidNorthing = Centroid(data.Points)
-        
-        return stats
-    }
-
-================================================================================
-6. API LAYER (api/ package)
-================================================================================
-
-The API layer handles HTTP requests and responses.
-
---------------------------------------------------------------------------------
-6.1 Validate Endpoint
---------------------------------------------------------------------------------
-
-Location: api/validate/index.go
-
-URL: POST /api/v1/validate
-Content-Type: application/json
-
-REQUEST BODY:
-    {
-        "project_id": "Survey-2026-02-01",
-        "coordinate_system": "MGA2020",
-        "points": [
-            {
-                "point_id": "P1",
-                "easting": 500000.000,
-                "northing": 6000000.000,
-                "height": 100.5,
-                "survey_type": "traverse"
-            },
-            ...
-        ]
-    }
-
-RESPONSE BODY:
-    {
-        "project_id": "Survey-2026-02-01",
-        "timestamp": "2026-02-01T15:04:05Z",
-        "status": "PASS",
-        "confidence_score": 95.0,
-        "summary": {
-            "total_points": 6,
-            "traverse_points": 4,
-            "control_points": 2,
-            "detail_points": 0,
-            "points_with_height": 6,
-            "bounding_box": {...},
-            "centroid_easting": 500100.0,
-            "centroid_northing": 6000050.0
-        },
-        "issues": [],
-        "checks_performed": [
-            "input_validation",
-            "duplicate_detection",
-            "distance_bearing_check",
-            "outlier_detection",
-            "traverse_closure"
-        ],
-        "processing_time": "12.345ms"
-    }
-
-CODE:
-
-    package handler
-
-    import (
-        "encoding/json"
-        "net/http"
-
-        "github.com/survey-validator/engine"
-        "github.com/survey-validator/models"
-    )
-
-    func Handler(w http.ResponseWriter, r *http.Request) {
-        // Set CORS headers for browser requests
-        w.Header().Set("Access-Control-Allow-Origin", "*")
-        w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-        // Handle preflight request
-        if r.Method == http.MethodOptions {
-            w.WriteHeader(http.StatusOK)
-            return
-        }
-
-        // Validate HTTP method
-        if r.Method != http.MethodPost {
-            respondError(w, http.StatusMethodNotAllowed, 
-                "Method not allowed. Use POST.")
-            return
-        }
-
-        // Parse JSON body
-        var surveyData models.SurveyData
-        if err := json.NewDecoder(r.Body).Decode(&surveyData); err != nil {
-            respondError(w, http.StatusBadRequest, 
-                "Invalid JSON: "+err.Error())
-            return
-        }
-        defer r.Body.Close()
-
-        // Run validation engine
-        eng := engine.NewEngine()
-        report := eng.Validate(&surveyData)
-        
-        // Return JSON response
-        respondJSON(w, http.StatusOK, report)
-    }
-
-CORS HEADERS EXPLAINED:
-
-Access-Control-Allow-Origin: *
-    - Allows requests from any domain
-    - Required for browser JavaScript to call API
-
-Access-Control-Allow-Methods: POST, OPTIONS
-    - Specifies which HTTP methods are allowed
-    - OPTIONS is for preflight requests
-
-Access-Control-Allow-Headers: Content-Type
-    - Allows Content-Type header in requests
-    - Required for JSON body
-
-PREFLIGHT REQUEST:
-
-Before making a POST request with JSON body, browsers send an OPTIONS
-request to check if the actual request is allowed. This is called
-a "preflight" request. The handler responds with 200 OK to permit
-the actual request.
-
---------------------------------------------------------------------------------
-6.2 Health Endpoint
---------------------------------------------------------------------------------
-
-Location: api/health/index.go
-
-URL: GET /health
-Purpose: Verify the service is running
-
-RESPONSE:
-    {
-        "status": "healthy",
-        "service": "survey-validator"
-    }
-
-CODE:
-
-    func Handler(w http.ResponseWriter, r *http.Request) {
-        // CORS headers
-        w.Header().Set("Access-Control-Allow-Origin", "*")
-        w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-        if r.Method == http.MethodOptions {
-            w.WriteHeader(http.StatusOK)
-            return
-        }
-
-        if r.Method != http.MethodGet {
-            w.Header().Set("Content-Type", "application/json")
-            w.WriteHeader(http.StatusMethodNotAllowed)
-            json.NewEncoder(w).Encode(map[string]string{
-                "error": "Method not allowed",
-            })
-            return
-        }
-
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusOK)
-        json.NewEncoder(w).Encode(map[string]string{
-            "status":  "healthy",
-            "service": "survey-validator",
-        })
-    }
-
---------------------------------------------------------------------------------
-6.3 Request/Response Flow
---------------------------------------------------------------------------------
-
-    ┌──────────────────────────────────────────────────────────────────────┐
-    │                      REQUEST/RESPONSE FLOW                           │
-    └──────────────────────────────────────────────────────────────────────┘
-
-    Client                 Vercel Edge              Serverless Function
-       │                       │                           │
-       │  POST /api/v1/validate│                           │
-       │  {survey data}        │                           │
-       │──────────────────────>│                           │
-       │                       │                           │
-       │                       │  Route to api/validate    │
-       │                       │──────────────────────────>│
-       │                       │                           │
-       │                       │                    ┌──────┴──────┐
-       │                       │                    │ Parse JSON  │
-       │                       │                    │ Create Engine│
-       │                       │                    │ Run Checks  │
-       │                       │                    │ Build Report│
-       │                       │                    └──────┬──────┘
-       │                       │                           │
-       │                       │  {validation report}      │
-       │                       │<──────────────────────────│
-       │                       │                           │
-       │  {validation report}  │                           │
-       │<──────────────────────│                           │
-       │                       │                           │
-
-================================================================================
-7. FRONTEND (public/index.html)
-================================================================================
-
-The frontend is a single HTML file with embedded CSS and JavaScript.
-
---------------------------------------------------------------------------------
-7.1 User Interface
---------------------------------------------------------------------------------
-
-LAYOUT:
-
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │                    🔍 Survey Data Validator                          │
-    │          Check your survey coordinates for errors - fast and easy   │
-    ├─────────────────────────────────────────────────────────────────────┤
-    │  📝 Enter Your Survey Points                                        │
-    │                                                                     │
-    │  ┌─────────────────────────────────────────────────────────────┐   │
-    │  │ How to use: Enter your survey points in the table below...  │   │
-    │  └─────────────────────────────────────────────────────────────┘   │
-    │                                                                     │
-    │  ┌───────┬──────────┬──────────┬────────┬──────────┬────┐         │
-    │  │ Point │ Easting  │ Northing │ Height │  Type    │    │         │
-    │  ├───────┼──────────┼──────────┼────────┼──────────┼────┤         │
-    │  │ [   ] │ [      ] │ [      ] │ [    ] │ [select] │ ✕  │         │
-    │  │ [   ] │ [      ] │ [      ] │ [    ] │ [select] │ ✕  │         │
-    │  │ [   ] │ [      ] │ [      ] │ [    ] │ [select] │ ✕  │         │
-    │  └───────┴──────────┴──────────┴────────┴──────────┴────┘         │
-    │                                                                     │
-    │  [➕ Add Point]  [📝 Load Example Data]  [🗑️ Clear All]             │
-    ├─────────────────────────────────────────────────────────────────────┤
-    │                    [✓ Check My Data]                                │
-    ├─────────────────────────────────────────────────────────────────────┤
-    │  📊 Results (appears after validation)                              │
-    │  ┌─────────────────────────────────────────────────────────────┐   │
-    │  │  ✅ All Good! / ⚠️ Some Issues Found / ❌ Problems Detected  │   │
-    │  └─────────────────────────────────────────────────────────────┘   │
-    │  ┌──────────┐ ┌──────────┐ ┌──────────┐                            │
-    │  │   95%    │ │    6     │ │    2     │                            │
-    │  │  Score   │ │  Points  │ │  Issues  │                            │
-    │  └──────────┘ └──────────┘ └──────────┘                            │
-    │                                                                     │
-    │  Issues to Review:                                                  │
-    │  ┌─────────────────────────────────────────────────────────────┐   │
-    │  │ ⚠️ Near-duplicate points: T1 and T2 (0.0089m apart)         │   │
-    │  └─────────────────────────────────────────────────────────────┘   │
-    └─────────────────────────────────────────────────────────────────────┘
-
-STYLING:
-
-- Dark theme (background: #1a1a1a)
-- Orange accent color (#ff8c00)
-- Card-based layout with subtle shadows
-- Responsive design for mobile devices
-- Status colors:
-    * Green (#90ee90) for PASS
-    * Yellow (#ffd700) for WARNING
-    * Red (#ff6b6b) for FAIL
-
---------------------------------------------------------------------------------
-7.2 JavaScript Functions
---------------------------------------------------------------------------------
-
-GLOBAL VARIABLE:
-
-    let rowCount = 0;  // Tracks unique row IDs
-
-FUNCTIONS:
-
-addRow(pointId, easting, northing, height, type):
-    - Creates a new table row for a survey point
-    - Parameters are optional (defaults to empty)
-    - Generates unique row ID using rowCount
-    - Inserts input fields and delete button
-
-    function addRow(pointId = '', easting = '', northing = '', height = '', 
-                    type = 'traverse') {
-        const tbody = document.getElementById('pointsBody');
-        const row = document.createElement('tr');
-        row.id = 'row_' + rowCount;
-        row.innerHTML = `
-            <td><input type="text" placeholder="e.g. P1" value="${pointId}"></td>
-            <td><input type="number" step="0.001" value="${easting}"></td>
-            <td><input type="number" step="0.001" value="${northing}"></td>
-            <td><input type="number" step="0.001" value="${height}"></td>
-            <td>
-                <select>
-                    <option value="traverse" ${type === 'traverse' ? 'selected' : ''}>
-                        Traverse
-                    </option>
-                    <option value="control" ${type === 'control' ? 'selected' : ''}>
-                        Control
-                    </option>
-                    <option value="detail" ${type === 'detail' ? 'selected' : ''}>
-                        Detail
-                    </option>
-                </select>
-            </td>
-            <td><button class="delete-btn" onclick="deleteRow('row_${rowCount}')">
-                ✕
-            </button></td>
-        `;
-        tbody.appendChild(row);
-        rowCount++;
-    }
-
-deleteRow(id):
-    - Removes a row from the table
-    - Called when user clicks ✕ button
-
-    function deleteRow(id) {
-        document.getElementById(id).remove();
-    }
-
-clearAll():
-    - Removes all rows
-    - Hides results section
-    - Resets rowCount to 0
-    - Adds 3 empty rows
-
-    function clearAll() {
-        document.getElementById('pointsBody').innerHTML = '';
-        document.getElementById('results').classList.remove('show');
-        rowCount = 0;
-        addRow(); addRow(); addRow();
-    }
-
-loadSample():
-    - Clears existing data
-    - Loads predefined sample survey points
-    - Useful for testing/demonstration
-
-    function loadSample() {
-        document.getElementById('pointsBody').innerHTML = '';
-        rowCount = 0;
-        
-        const sampleData = [
-            { id: 'BM1', e: 500000.000, n: 6000000.000, h: 100.5, t: 'control' },
-            { id: 'T1', e: 500050.123, n: 6000025.456, h: 101.2, t: 'traverse' },
-            { id: 'T2', e: 500100.789, n: 6000050.321, h: 102.1, t: 'traverse' },
-            { id: 'T3', e: 500150.456, n: 6000025.789, h: 101.8, t: 'traverse' },
-            { id: 'T4', e: 500100.100, n: 6000000.100, h: 100.9, t: 'traverse' },
-            { id: 'BM2', e: 500200.000, n: 6000100.000, h: 103.0, t: 'control' },
-        ];
-        
-        sampleData.forEach(p => addRow(p.id, p.e, p.n, p.h, p.t));
-    }
-
-getPoints():
-    - Reads all data from table rows
-    - Converts to array of point objects
-    - Filters out incomplete rows
-    - Returns array matching API format
-
-    function getPoints() {
-        const rows = document.querySelectorAll('#pointsBody tr');
-        const points = [];
-        
-        rows.forEach(row => {
-            const inputs = row.querySelectorAll('input');
-            const select = row.querySelector('select');
-            
-            const pointId = inputs[0].value.trim();
-            const easting = parseFloat(inputs[1].value);
-            const northing = parseFloat(inputs[2].value);
-            const height = inputs[3].value ? parseFloat(inputs[3].value) : null;
-            const surveyType = select.value;
-            
-            // Only include complete points
-            if (pointId && !isNaN(easting) && !isNaN(northing)) {
-                const point = {
-                    point_id: pointId,
-                    easting: easting,
-                    northing: northing,
-                    survey_type: surveyType
-                };
-                if (height !== null) {
-                    point.height = height;
-                }
-                points.push(point);
-            }
-        });
-        
-        return points;
-    }
-
-validate():
-    - Main validation function (async)
-    - Collects points from table
-    - Sends POST request to API
-    - Displays results
-
-    async function validate() {
-        const points = getPoints();
-        
-        // Check minimum points
-        if (points.length < 2) {
-            alert('Please enter at least 2 complete points');
-            return;
-        }
-
-        // Build request body
-        const data = {
-            project_id: 'Survey-' + new Date().toISOString().slice(0,10),
-            points: points
-        };
-
-        try {
-            // Send API request
-            const response = await fetch('/api/v1/validate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-            showResults(result);
-        } catch (e) {
-            alert('Error connecting to server: ' + e.message);
-        }
-    }
-
-showResults(result):
-    - Renders the validation report
-    - Shows status box with appropriate color
-    - Displays statistics (score, points, issues)
-    - Lists all issues with severity styling
-
-    function showResults(result) {
-        const container = document.getElementById('resultsContent');
-        const resultsDiv = document.getElementById('results');
-        
-        // Status messages
-        const statusMessages = {
-            PASS: { 
-                emoji: '✅', 
-                text: 'All Good!', 
-                subtitle: 'No problems found in your survey data.' 
-            },
-            WARNING: { 
-                emoji: '⚠️', 
-                text: 'Some Issues Found', 
-                subtitle: 'Please review the items below.' 
-            },
-            FAIL: { 
-                emoji: '❌', 
-                text: 'Problems Detected', 
-                subtitle: 'Your data has errors that need fixing.' 
-            }
-        };
-        
-        const status = statusMessages[result.status];
-        
-        // Build HTML
-        let html = `
-            <div class="status-box ${result.status.toLowerCase()}">
-                <div class="status-text">${status.emoji} ${status.text}</div>
-                <div class="status-subtitle">${status.subtitle}</div>
-            </div>
-            
-            <div class="stats-row">
-                <div class="stat-box">
-                    <div class="stat-number">${result.confidence_score}%</div>
-                    <div class="stat-label">Data Quality Score</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number">${result.summary.total_points}</div>
-                    <div class="stat-label">Points Checked</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number">${result.issues.length}</div>
-                    <div class="stat-label">Issues Found</div>
-                </div>
-            </div>
-        `;
-        
-        // Add issues or success message
-        if (result.issues.length === 0) {
-            html += `<div class="no-issues">
-                ✅ Great job! Your survey data passed all checks.
-            </div>`;
-        } else {
-            html += `<h3>Issues to Review:</h3>`;
-            result.issues.forEach(issue => {
-                const severityClass = issue.severity === 'error' ? '' : issue.severity;
-                html += `
-                    <div class="issue-card ${severityClass}">
-                        <div class="issue-title">${issue.description}</div>
-                        ${issue.point_ids ? 
-                            `<div class="issue-points">
-                                📍 Points: ${issue.point_ids.join(', ')}
-                            </div>` : ''}
-                    </div>
-                `;
-            });
-        }
-        
-        container.innerHTML = html;
-        resultsDiv.classList.add('show');
-        resultsDiv.scrollIntoView({ behavior: 'smooth' });
-    }
-
-INITIALIZATION:
-
-    // Initialize with 3 empty rows on page load
-    addRow(); addRow(); addRow();
-
---------------------------------------------------------------------------------
-7.3 API Communication
---------------------------------------------------------------------------------
-
-The frontend communicates with the backend using the Fetch API.
-
-REQUEST FORMAT:
-
-    fetch('/api/v1/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            project_id: 'Survey-2026-02-01',
-            points: [
-                {
-                    point_id: 'P1',
-                    easting: 500000.000,
-                    northing: 6000000.000,
-                    height: 100.5,
-                    survey_type: 'traverse'
-                },
-                // ... more points
-            ]
-        })
-    })
-
-RESPONSE HANDLING:
-
-    const response = await fetch(url, options);
-    const result = await response.json();
-    // result is now a JavaScript object matching ValidationReport
-
-================================================================================
-8. VERCEL DEPLOYMENT
-================================================================================
-
---------------------------------------------------------------------------------
-8.1 Configuration
---------------------------------------------------------------------------------
-
-Location: vercel.json (at repository root)
-
-    {
-      "version": 2,
-      "builds": [
-        {
-          "src": "survey-validator/api/validate/index.go",
-          "use": "@vercel/go"
-        },
-        {
-          "src": "survey-validator/api/health/index.go",
-          "use": "@vercel/go"
-        },
-        {
-          "src": "survey-validator/public/**",
-          "use": "@vercel/static"
-        }
-      ],
-      "routes": [
-        {
-          "src": "/api/v1/validate",
-          "dest": "/survey-validator/api/validate"
-        },
-        {
-          "src": "/health",
-          "dest": "/survey-validator/api/health"
-        },
-        {
-          "src": "/(.*)",
-          "dest": "/survey-validator/public/$1"
-        }
-      ]
-    }
-
-CONFIGURATION EXPLAINED:
-
-version: 2
-    - Vercel configuration schema version
-    - Version 2 is current standard
-
-builds:
-    - Defines how to compile/process source files
-    - @vercel/go: Compiles Go to serverless function
-    - @vercel/static: Serves files from CDN
-
-routes:
-    - URL mapping rules (processed top-to-bottom)
-    - First match wins
-    - Regex patterns supported
-
---------------------------------------------------------------------------------
-8.2 Serverless Functions
---------------------------------------------------------------------------------
-
-Each Go handler becomes an independent serverless function.
-
-FUNCTION REQUIREMENTS:
-
-1. Package name: "handler" (any package name works)
-2. Function name: "Handler" (required by Vercel)
-3. Signature: func Handler(http.ResponseWriter, *http.Request)
-4. Must be in its own directory (to avoid naming conflicts)
-
-DIRECTORY STRUCTURE:
-
-    api/
-    ├── validate/
-    │   └── index.go    ← package handler, func Handler
-    └── health/
-        └── index.go    ← package handler, func Handler
-
-Each directory = separate Go package = no conflicts.
-
-COLD START:
-
-When a function hasn't been invoked recently, Vercel needs to:
-1. Start a new container
-2. Load the compiled binary
-3. Initialize the runtime
-
-This adds 100-500ms latency (cold start).
-Subsequent requests reuse the warm container (fast).
-
---------------------------------------------------------------------------------
-8.3 Routing
---------------------------------------------------------------------------------
-
-URL MAPPING:
-
-    User Request              → Internal Destination
-    ────────────────────────────────────────────────
-    POST /api/v1/validate     → api/validate/index.go (Handler)
-    GET  /health              → api/health/index.go (Handler)
-    GET  /                    → public/index.html
-    GET  /anything            → public/anything
-
-CATCH-ALL ROUTE:
-
-    {
-      "src": "/(.*)",
-      "dest": "/survey-validator/public/$1"
-    }
-
-- (.*) matches any path
-- $1 is the captured path
-- Routes to static files in public/
-
-================================================================================
-9. COMPLETE DATA FLOW
-================================================================================
-
---------------------------------------------------------------------------------
-9.1 User Input to Response
---------------------------------------------------------------------------------
-
-STEP-BY-STEP FLOW:
-
-1. USER OPENS PAGE
-   - Browser: GET https://surveyvalidator.vercel.app/
-   - Vercel: Serves public/index.html from CDN
-   - Browser: Renders page, runs initialization JavaScript
-   - Result: 3 empty input rows displayed
-
-2. USER ENTERS DATA
-   - User types in point information
-   - JavaScript stores data in DOM (input elements)
-   - No server communication yet
-
-3. USER CLICKS "Check My Data"
-   - JavaScript: validate() function called
-   - JavaScript: getPoints() reads DOM, builds array
-   - JavaScript: Creates request object with project_id and points
-
-4. BROWSER SENDS PREFLIGHT
-   - Browser: OPTIONS /api/v1/validate
-   - Vercel: Routes to api/validate
-   - Handler: Responds with CORS headers
-   - Browser: Confirms POST is allowed
-
-5. BROWSER SENDS POST REQUEST
-   - Browser: POST /api/v1/validate with JSON body
-   - Vercel Edge: Receives request
-   - Vercel: Routes to api/validate serverless function
-
-6. SERVERLESS FUNCTION EXECUTES
-   - Handler: Parses JSON into models.SurveyData
-   - Handler: Creates engine.NewEngine()
-   - Engine: Launches 5 goroutines (one per check)
-   - Checks: Run concurrently, send results to channel
-   - Engine: Collects results, builds ValidationReport
-   - Handler: Encodes report as JSON, sends response
-
-7. BROWSER RECEIVES RESPONSE
-   - Browser: Receives JSON response
-   - JavaScript: Parses JSON into object
-   - JavaScript: showResults() renders HTML
-   - Result: User sees validation results
-
-TIMING BREAKDOWN (typical):
-
-    Network latency (user → edge):     20-100ms
-    Cold start (if needed):            100-500ms
-    JSON parsing:                      1-2ms
-    Validation (5 concurrent checks):  5-20ms
-    JSON encoding:                     1-2ms
-    Network latency (edge → user):     20-100ms
-    ─────────────────────────────────────────────
-    Total (warm function):             50-200ms
-    Total (cold start):                150-700ms
-
---------------------------------------------------------------------------------
-9.2 Validation Pipeline
---------------------------------------------------------------------------------
-
-INSIDE THE ENGINE:
-
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │                     VALIDATION PIPELINE                              │
-    └─────────────────────────────────────────────────────────────────────┘
-
-                           SurveyData Input
-                                  │
-                                  ▼
-                    ┌─────────────────────────┐
-                    │    engine.Validate()    │
-                    │    Start timer          │
-                    │    Create report        │
-                    └─────────────────────────┘
-                                  │
-            ┌─────────┬──────────┼──────────┬──────────┐
-            ▼         ▼          ▼          ▼          ▼
-       ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-       │ Input  │ │Duplicate│ │Distance│ │Outlier │ │Traverse│
-       │Validate│ │Detect   │ │Bearing │ │Detect  │ │Closure │
-       └────────┘ └────────┘ └────────┘ └────────┘ └────────┘
-            │         │          │          │          │
-            └─────────┴──────────┴──────────┴──────────┘
-                                  │
-                                  ▼
-                    ┌─────────────────────────┐
-                    │   Collect all issues    │
-                    │   via result channel    │
-                    └─────────────────────────┘
-                                  │
-                                  ▼
-                    ┌─────────────────────────┐
-                    │  Calculate Summary      │
-                    │  Calculate Confidence   │
-                    │  Record processing time │
-                    └─────────────────────────┘
-                                  │
-                                  ▼
-                         ValidationReport Output
-
-================================================================================
-10. MATHEMATICAL FORMULAS
-================================================================================
-
-2D DISTANCE (Euclidean):
-    d = √((E₂ - E₁)² + (N₂ - N₁)²)
+    Base Score: 100%
     
-    Where:
-    - E₁, E₂ = Easting coordinates
-    - N₁, N₂ = Northing coordinates
-    - d = horizontal distance
-
-3D DISTANCE (Slope):
-    d = √((E₂ - E₁)² + (N₂ - N₁)² + (H₂ - H₁)²)
+    Deductions:
+        - Each ERROR found: -15 points
+        - Each WARNING found: -5 points
+        - Each INFO notice: -1 point
     
-    Where:
-    - H₁, H₂ = Height coordinates
-    - d = slope distance
+    Minimum: 0%
 
-BEARING (Azimuth from North):
-    θ = atan2(ΔE, ΔN) × (180/π)
-    if θ < 0: θ = θ + 360
-    
-    Where:
-    - ΔE = E₂ - E₁
-    - ΔN = N₂ - N₁
-    - θ = bearing in degrees (0-360)
-
-CENTROID:
-    Ē = (Σ Eᵢ) / n
-    N̄ = (Σ Nᵢ) / n
-    
-    Where:
-    - n = number of points
-    - Ē, N̄ = centroid coordinates
-
-STANDARD DEVIATION (Spatial):
-    σ = √(Σ((Eᵢ - Ē)² + (Nᵢ - N̄)²) / n)
-    
-    Where:
-    - σ = standard deviation of distances from centroid
-
-TRAVERSE PRECISION:
-    P = L / m
-    
-    Where:
-    - L = total traverse length
-    - m = linear misclosure
-    - P = precision ratio (e.g., 10000 for 1:10000)
-
-LINEAR MISCLOSURE:
-    m = √((Eₗₐₛₜ - Efirst)² + (Nₗₐₛₜ - Nfirst)²)
+A score of 85%+ generally indicates data ready for deliverable use.
+A score below 70% suggests issues that should be investigated.
 
 ================================================================================
-11. THRESHOLD VALUES AND CONSTANTS
+                        POINT TYPES EXPLAINED
 ================================================================================
 
-DEFINED IN domain/validators.go:
+CONTROL POINTS (▲ green triangles)
+    Known, fixed reference points with published coordinates. These are your
+    "truth"—typically monumented points from a geodetic network, or established
+    project control.
 
-    DuplicateThreshold     = 0.001   // 1 millimeter
-    NearDuplicateThreshold = 0.01    // 1 centimeter (10 millimeters)
-    OutlierThreshold       = 3.0     // 3 standard deviations
-    MaxBearingChange       = 170.0   // degrees
-    MinTraverseDistance    = 0.1     // 10 centimeters
-    GoodPrecision          = 10000   // 1:10000
-    AcceptablePrecision    = 5000    // 1:5000
+TRAVERSE POINTS (● blue circles)
+    Sequential stations in your traverse. These are the setups you occupied
+    to run your survey. Order matters—the closure algorithm assumes they're
+    in path sequence.
 
-THRESHOLD EXPLANATIONS:
-
-DuplicateThreshold (0.001m = 1mm):
-    - Points closer than 1mm are considered exact duplicates
-    - Sub-millimeter differences are below survey precision
-    - Generates ERROR severity
-
-NearDuplicateThreshold (0.01m = 1cm):
-    - Points 1mm to 1cm apart are "near duplicates"
-    - Could be intentional (e.g., offset points)
-    - Generates WARNING for review
-
-OutlierThreshold (3.0 standard deviations):
-    - Points beyond 3σ from centroid are flagged
-    - 99.7% of random points would be within this range
-    - Generates WARNING for review
-
-MaxBearingChange (170°):
-    - Direction changes greater than 170° are suspicious
-    - Could indicate point order error or missing point
-    - Almost a complete reversal of direction
-
-MinTraverseDistance (0.1m = 10cm):
-    - Traverse legs shorter than 10cm are flagged
-    - Very short legs may indicate data entry errors
-    - Generates WARNING
-
-GoodPrecision (1:10000):
-    - Industry standard for quality traverse work
-    - 1mm error per 10m of traverse
-    - Generates INFO (informational)
-
-AcceptablePrecision (1:5000):
-    - Minimum acceptable precision for most work
-    - 1mm error per 5m of traverse
-    - Below this generates WARNING or ERROR
+DETAIL POINTS (◆ gray diamonds)
+    Everything else: topographic shots, boundary corners, building corners,
+    utility locates. These are validated for duplicates and outliers but not
+    included in traverse closure calculations.
 
 ================================================================================
-12. ERROR HANDLING
+                    VISUALIZATION FEATURES
 ================================================================================
 
-HTTP ERRORS:
+The interactive plot shows your survey spatially:
 
-405 Method Not Allowed:
-    - Returned if wrong HTTP method used
-    - Validate endpoint requires POST
-    - Health endpoint requires GET
+CONTROLS:
+    ＋ / −       Zoom in/out
+    ↺            Reset view (also clears measurement)
+    📏           Measurement mode (click two points for distance/bearing)
+    🏷️ Labels    Toggle point ID display
+    ✓ Adjusted   Show Bowditch-adjusted coordinates
+    📥 Export    Download as PNG image
 
-400 Bad Request:
-    - Returned if JSON parsing fails
-    - Returned if request body is empty
-    - Includes error message in response
+INTERACTION:
+    - Drag to pan when zoomed
+    - Scroll wheel to zoom
+    - Hover any point for detailed tooltip
+    - Click point to see full info
+    - Minimap appears when zoomed (shows viewport position)
 
-500 Internal Server Error:
-    - Not explicitly handled
-    - Would occur on unexpected runtime errors
-    - Go's panic recovery would catch these
-
-VALIDATION ERRORS (Not HTTP errors):
-
-The application distinguishes between:
-- HTTP errors: Problems with the request itself
-- Validation errors: Problems found in the survey data
-
-Validation errors are returned as part of a successful (200 OK) response.
-
-EXAMPLE ERROR RESPONSE:
-
-    HTTP/1.1 400 Bad Request
-    Content-Type: application/json
-
-    {
-        "error": "Invalid JSON: unexpected end of JSON input"
-    }
-
-EXAMPLE VALIDATION RESPONSE WITH ERRORS:
-
-    HTTP/1.1 200 OK
-    Content-Type: application/json
-
-    {
-        "project_id": "Survey-2026-02-01",
-        "status": "FAIL",
-        "confidence_score": 70,
-        "issues": [
-            {
-                "check_name": "duplicate_detection",
-                "severity": "error",
-                "point_ids": ["P1", "P2"],
-                "description": "Duplicate points: P1 and P2 (0.0001m apart)"
-            }
-        ],
-        ...
-    }
+CARTOGRAPHIC ELEMENTS:
+    - Professional scale bar with alternating segments
+    - North arrow in compass style
+    - Legend showing point type symbols
+    - Grid lines for coordinate reference
 
 ================================================================================
-13. CONFIDENCE SCORE CALCULATION
+                    EDITING DATA
 ================================================================================
 
-Location: models/report.go, CalculateConfidenceScore() method
+The input table is fully editable:
 
-ALGORITHM:
+KEYBOARD SHORTCUTS:
+    Tab          Move to next cell
+    Shift+Tab    Move to previous cell
+    Enter        Move down (adds new row at bottom)
+    Arrow Up     Move to cell above
+    Arrow Down   Move to cell below
 
-    func (r *ValidationReport) CalculateConfidenceScore() {
-        // Start with perfect score
-        if len(r.Issues) == 0 {
-            r.ConfidenceScore = 100.0
-            return
-        }
+CLICK-TO-EDIT:
+    Click any cell to edit directly. Changes are reflected immediately.
 
-        score := 100.0
-        
-        // Deduct points based on severity
-        for _, issue := range r.Issues {
-            switch issue.Severity {
-            case SeverityError:
-                score -= 15.0
-            case SeverityWarning:
-                score -= 5.0
-            case SeverityInfo:
-                score -= 1.0
-            }
-        }
-
-        // Minimum score is 0
-        if score < 0 {
-            score = 0
-        }
-        
-        r.ConfidenceScore = score
-    }
-
-SCORING TABLE:
-
-    Issue Severity    Deduction
-    ─────────────────────────────
-    Error             -15 points
-    Warning           -5 points
-    Info              -1 point
-
-EXAMPLES:
-
-    No issues:                              100%
-    1 warning:                              95%
-    2 warnings:                             90%
-    1 error:                                85%
-    1 error + 2 warnings:                   75%
-    7 errors:                               0% (capped at 0)
-
-INTERPRETATION:
-
-    Score      Quality Level
-    ─────────────────────────
-    90-100     Excellent
-    75-89      Good
-    50-74      Fair
-    25-49      Poor
-    0-24       Very Poor
+JUMP TO ISSUES:
+    After validation, click any issue row in the report. The tool will:
+    1. Scroll to the input table
+    2. Expand the table if collapsed
+    3. Highlight the affected row(s) with blue pulse
+    4. Focus the first input for immediate editing
 
 ================================================================================
-                              END OF DOCUMENTATION
+                    CSV IMPORT
 ================================================================================
 
-Document created: February 1, 2026
-Application: Survey Data Validator
-Version: 1.0
-Author: Generated documentation
+Two ways to import:
 
-For questions or issues, refer to the source code or contact the developer.
+1. PASTE CSV
+   - Click "Paste CSV"
+   - Paste data from Excel, Notepad, or survey software
+   - Toggle "First row is header" as appropriate
+   - Preview shows detected structure
+   - Click "Import" to load into table
 
+2. UPLOAD FILE
+   - Click "Upload File"
+   - Select .csv or .txt file
+   - Same preview and column mapping flow
+
+SMART COLUMN DETECTION:
+   For headerless data, the tool analyzes the first row:
+   - Columns with large numbers (>10,000) → likely coordinates
+   - First large column → Easting
+   - Second large column → Northing
+   - First text column → Point ID
+   - Remaining number column → Height
+
+POINT TYPE INFERENCE:
+   If no Type column, names are analyzed:
+   - Contains "CP", "CON", "CTRL", "BM" → Control
+   - Contains "T" followed by digits → Traverse
+   - Everything else → Detail
+
+================================================================================
+                    TOLERANCE PRESETS
+================================================================================
+
+SURVEY GRADE (1mm)
+    - Duplicate threshold: 0.001m
+    - Near-duplicate: 0.010m
+    - Used for: precise control, deformation monitoring
+
+ENGINEERING (1cm)
+    - Duplicate threshold: 0.010m
+    - Near-duplicate: 0.100m
+    - Used for: construction layout, boundary surveys
+
+MAPPING (10cm)
+    - Duplicate threshold: 0.100m
+    - Near-duplicate: 1.000m
+    - Used for: GIS data capture, reconnaissance
+
+================================================================================
+                    TECHNICAL DETAILS
+================================================================================
+
+COORDINATE SYSTEM:
+    This tool works with PROJECTED coordinates (meters). It does NOT support
+    geographic coordinates (latitude/longitude). Your data should be in a
+    local grid, state plane, UTM, or similar projection.
+
+TRAVERSE DETECTION:
+    The tool automatically identifies if you have a closed traverse (T1=T6)
+    or link traverse (T1→Control, T6→Control). It detects this by checking
+    if traverse endpoints match control point coordinates within tolerance.
+
+OUTLIER DETECTION:
+    Uses standard deviation from centroid. Points beyond 3σ (three standard
+    deviations) are flagged as potential outliers. This works best for
+    clustered detail points; linear traverses may trigger false positives.
+
+CONCURRENT PROCESSING:
+    All validation checks run in parallel using Go's goroutines. A typical
+    500-point dataset validates in under 100 milliseconds.
+
+================================================================================
+                    DEPLOYMENT
+================================================================================
+
+This tool runs as a serverless application on Vercel:
+
+    Frontend: Static HTML/CSS/JavaScript (single file, ~3000 lines)
+    Backend:  Go 1.21 serverless functions
+    API:      RESTful JSON at /api/v1/validate
+
+No database. No user accounts. No data storage. Your survey data stays in
+your browser and is only sent to the validation API during processing.
+
+================================================================================
+                    LIMITATIONS
+================================================================================
+
+- Maximum ~1000 points per validation (browser performance)
+- Traverse must be sequential (T1 → T2 → T3 → ... → Tn)
+- No support for leveling runs (vertical-only traverses)
+- Outlier detection assumes roughly clustered data
+- No transformation between coordinate systems
+- No support for angular observations (angles, bearings)
+
+================================================================================
+                    FUTURE ENHANCEMENTS
+================================================================================
+
+Potential roadmap items:
+
+    □ Level run validation (differential leveling)
+    □ Angular misclosure checks (when observations provided)
+    □ Coordinate transformation (between systems)
+    □ Project templates (save/load configurations)
+    □ Batch processing (multiple files)
+    □ PDF report generation
+    □ Comparison mode (before/after datasets)
+
+================================================================================
+                    CREDITS
+================================================================================
+
+Built with:
+    - Go 1.21 (backend validation engine)
+    - Vanilla JavaScript (no frameworks, no dependencies)
+    - HTML5 Canvas (visualization)
+    - Vercel (serverless hosting)
+
+Survey mathematics based on standard texts:
+    - "Elementary Surveying" by Ghilani & Wolf
+    - "Adjustment Computations" by Ghilani
+
+================================================================================
+                    SUMMARY
+================================================================================
+
+Survey Data Validator is your pre-flight checklist for survey data. Before
+you submit coordinates to a client, import them into CAD, or file a plat,
+run them through this tool. It takes 30 seconds and could save you from an
+embarrassing (and expensive) mistake.
+
+    ✓ Catches duplicates
+    ✓ Validates traverse closure
+    ✓ Flags outliers
+    ✓ Shows spatial visualization
+    ✓ Computes adjusted coordinates
+    ✓ Exports professional reports
+
+No installation. No login. Just paste your data and validate.
+
+================================================================================
+                    https://surveyvalidator.vercel.app
 ================================================================================

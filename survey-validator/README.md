@@ -1,291 +1,298 @@
 # Survey Data Validator
 
-A simple tool for surveyors to check their coordinate data for common errors.
+A quick sanity check for your survey coordinates.
 
-## What This Tool Does
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://surveyvalidator.vercel.app)
+[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go)](https://golang.org)
+[![Deploy](https://img.shields.io/badge/deploy-Vercel-black?logo=vercel)](https://vercel.com)
 
-Before you submit your survey or use it in the field, run your points through this validator. It catches mistakes that are easy to miss:
+> We've all been there: a typo in the coordinates, a duplicated point ID, a traverse that doesn't close. This tool catches those before you submit.
 
-- **Duplicate points** - Same coordinates entered twice (copy/paste errors)
-- **Zero coordinates** - Points with 0,0 (forgot to enter data)
-- **Outliers** - A point way off from the others (typo in coordinates)
-- **Traverse closure** - Does your loop close? What's the precision?
-- **Distance issues** - Unusual jumps between traverse points
+![Survey Validator Screenshot](https://via.placeholder.com/800x400/f8fafc/1e293b?text=Survey+Data+Validator)
 
-## How To Use
+---
 
-1. Start the server (see below)
-2. Open http://localhost:8080 in your browser
-3. Enter your points in the table - Point ID, Easting, Northing, Height, Type
-4. Click **Validate Survey Data**
-5. Review results - problems show in red/orange, good data shows green
+## What It Does
 
-## Quick Start
+Paste your points, click validate, get a report. It runs 8+ checks in parallel and tells you what's wrong (and what's fine):
 
-```bash
-cd survey-validator
-go build -o survey-validator.exe ./cmd/server
-.\survey-validator.exe
-```
+| Check | What It Catches |
+|-------|------------------|
+| **Duplicates** | Same point ID used twice, or two shots at basically the same spot |
+| **Traverse Closure** | Does your loop close? What's the precision ratio? |
+| **Outliers** | That one point way off from everything else (probably a typo) |
+| **Bad Input** | Missing coords, zeroes, empty point IDs |
+| **Geometry** | Weird leg lengths, sudden direction changes, suspicious patterns |
 
-Open http://localhost:8080 and start entering points.
+It also:
+- Computes Bowditch adjustment so you can see corrected coordinates
+- Draws an interactive plot you can zoom, pan, and measure on
+- Exports to JSON, CSV, or PNG with one click
+- Lets you click any issue to jump straight to that row in your data
 
-## Features
+---
 
-- Web interface - no JSON knowledge needed, just fill in the table
-- Instant validation - results in under a second
-- Confidence score - overall quality rating for your data
-- Detailed reports - shows exactly which points have problems
+## Try It
 
-## Point Types
+**[surveyvalidator.vercel.app](https://surveyvalidator.vercel.app)**
 
-- **traverse** - Points in your traverse loop
-- **control** - Known control points
-- **detail** - Detail/topo points
+No install, no signup. Just paste your data and go.
 
-## Project Structure
-
-```
-survey-validator/
-├── api/                    # HTTP handlers and server
-│   ├── server.go
-│   └── request.go
-├── cmd/
-│   └── server/
-│       └── main.go         # Application entry point
-├── domain/                 # Survey logic and validation rules
-│   ├── spatial.go          # Geometric calculations
-│   ├── traverse.go         # Traverse-specific checks
-│   └── validators.go       # Core validation functions
-├── engine/
-│   └── engine.go           # Concurrent validation orchestrator
-├── models/                 # Data structures
-│   ├── point.go            # Survey point model
-│   └── report.go           # Validation report model
-├── testdata/               # Sample data for testing
-│   ├── sample_survey.json
-│   └── sample_with_errors.json
-├── go.mod
-└── README.md
-```
+---
 
 ## Getting Started
 
-### Prerequisites
+### Use the web app
+Just open [surveyvalidator.vercel.app](https://surveyvalidator.vercel.app). Done.
 
-- Go 1.21 or later
-
-### Installation
+### Or run it locally
 
 ```bash
-# Clone or navigate to the project
+# Clone the repository
+git clone https://github.com/yourusername/survey-validator.git
 cd survey-validator
 
-# Download dependencies (none required - uses standard library only)
-go mod tidy
-
-# Build the application
-go build -o survey-validator.exe ./cmd/server
-
-# Or run directly
-go run ./cmd/server
-```
-
-### Running the Server
-
-```bash
-# Default port 8080
+# Run the server
 go run ./cmd/server
 
-# Custom port
-go run ./cmd/server -port 3000
-
-# Using environment variable
-PORT=3000 go run ./cmd/server
+# Open in browser
+open http://localhost:8080
 ```
 
-## API Endpoints
+---
 
-### Health Check
+## How It Works
 
 ```
+  Your Data  ──▶  Validation Engine  ──▶  Report + Visualization
+     │                  │                        │
+  paste/upload     8 checks in            pass/fail, issue list,
+  or type it       parallel (<100ms)      interactive plot
+```
+
+### 1. Get your data in
+
+- **Paste** — Copy from Excel, your data collector, wherever
+- **Upload** — Drag a .csv file onto the page
+- **Type** — Just fill in the table manually (Tab and arrows work)
+
+### 2. Pick a tolerance
+
+| Preset | Dup Threshold | Near-Dup | When to use |
+|--------|---------------|----------|-------------|
+| Survey Grade | 1mm | 1cm | Precise control, boundaries |
+| Engineering | 1cm | 10cm | Construction stakeout |
+| Mapping | 10cm | 1m | GIS, topo, recon |
+
+### 3. Hit validate
+
+Click the button. In under 100ms you get:
+
+- **PASS / WARNING / FAIL** — overall verdict
+- **Confidence score** — rough quality rating (0-100%)
+- **Issue list** — click any issue to jump to that row
+- **Visualization** — see your points on a plot
+
+---
+
+## The Plot
+
+The interactive canvas does more than just show dots:
+
+| Feature | What it does |
+|---------|---------------|
+| **Zoom** | +/− buttons or scroll wheel |
+| **Pan** | Click and drag when zoomed in |
+| **Measure** | Click two points, get distance and bearing |
+| **Labels** | Toggle point IDs on/off |
+| **Adjusted** | Overlay the Bowditch-corrected positions |
+| **Export** | Download as PNG |
+| **Minimap** | Shows where you are when zoomed in |
+| **Tooltips** | Hover for details |
+
+**What the symbols mean:**
+- ▲ Green triangle = Control point
+- ● Blue circle = Traverse station  
+- ◆ Gray diamond = Detail/topo shot
+- Red ring around anything = Problem
+
+---
+
+## Traverse Closure
+
+If you've got traverse points, we calculate how well your loop closes:
+
+| Metric | What it means |
+|--------|---------------|
+| **Misclosure ΔE/ΔN** | How far off you are in easting and northing |
+| **Linear Misclosure** | Total closure error (meters) |
+| **Closure Ratio** | Like "1:12,500" — that's 1mm error per 12.5m traveled |
+| **Rating** | Excellent / Good / Acceptable / Poor |
+
+Rule of thumb:
+- **1:10,000+** — Great. Control-quality work.
+- **1:5,000+** — Good. Typical boundary survey.
+- **1:3,000+** — Okay for topo.
+- **Below that** — Probably need to re-run something.
+
+If closure is acceptable, we run Bowditch adjustment automatically and you can see the corrected coordinates on the plot.
+
+---
+
+## API
+
+If you want to integrate this into your own workflow, here's the API.
+
+### Health check
+
+```http
 GET /health
 ```
 
-Response:
 ```json
-{
-  "status": "healthy",
-  "service": "survey-validator"
-}
+{ "status": "healthy", "service": "survey-validator" }
 ```
 
-### Validate Survey Data
+### Validate Survey
 
-```
+```http
 POST /api/v1/validate
 Content-Type: application/json
 ```
 
-#### Request Body
-
+**Request:**
 ```json
 {
-  "project_id": "SURVEY-001",
-  "coordinate_system": "UTM Zone 36N",
+  "project_id": "SITE-2026-001",
   "points": [
-    {
-      "point_id": "T1",
-      "easting": 500050.123,
-      "northing": 6000025.456,
-      "height": 101.200,
-      "survey_type": "traverse"
-    },
-    {
-      "point_id": "T2",
-      "easting": 500100.789,
-      "northing": 6000050.321,
-      "height": 102.100,
-      "survey_type": "traverse"
-    }
+    { "point_id": "CP1", "easting": 500000.000, "northing": 600000.000, "height": 100.0, "survey_type": "control" },
+    { "point_id": "T1", "easting": 500050.125, "northing": 600030.250, "height": 100.15, "survey_type": "traverse" },
+    { "point_id": "T2", "easting": 500100.380, "northing": 600055.620, "height": 100.32, "survey_type": "traverse" }
   ]
 }
 ```
 
-#### Survey Types
-
-- `traverse` - Traverse survey points
-- `control` - Control points
-- `detail` - Detail/topographic points
-
-#### Response
-
+**Response:**
 ```json
 {
-  "project_id": "SURVEY-001",
-  "timestamp": "2026-02-01T10:30:00Z",
   "status": "PASS",
-  "confidence_score": 100,
-  "summary": {
-    "total_points": 2,
-    "traverse_points": 2,
-    "control_points": 0,
-    "detail_points": 0,
-    "points_with_height": 2,
-    "bounding_box": {
-      "min_easting": 500050.123,
-      "max_easting": 500100.789,
-      "min_northing": 6000025.456,
-      "max_northing": 6000050.321
-    },
-    "centroid_easting": 500075.456,
-    "centroid_northing": 6000037.889
-  },
+  "confidence_score": 95,
   "issues": [],
-  "checks_performed": [
-    "input_validation",
-    "duplicate_detection",
-    "distance_bearing_check",
-    "outlier_detection",
-    "traverse_closure"
-  ],
-  "processing_time": "1.234ms"
+  "summary": { "total_points": 3, "traverse_points": 2, "control_points": 1 },
+  "traverse_adjustment": { "closure_ratio": "1:12500", "status": "PASS" },
+  "checks_performed": ["input_validation", "duplicate_detection", "traverse_closure", ...]
 }
 ```
 
-## Validation Checks
+---
 
-### 1. Input Validation
-- Checks for empty point IDs
-- Flags zero coordinates
-- Validates survey types
+## Code Layout
 
-### 2. Duplicate Detection
-- **Duplicates**: Points within 0.001m (error)
-- **Near-duplicates**: Points within 0.01m (warning)
+If you want to dig into the code:
 
-### 3. Distance & Bearing Consistency
-- Flags very short distances (< 0.1m)
-- Detects large bearing changes (> 170°)
-- Identifies unusual distance ratios
-
-### 4. Outlier Detection
-- Calculates centroid of all points
-- Flags points beyond 3 standard deviations
-
-### 5. Traverse Closure
-- Calculates linear misclosure
-- Computes relative precision
-- Quality ratings:
-  - Good: better than 1:10000
-  - Acceptable: 1:5000 to 1:10000
-  - Poor: 1:1000 to 1:5000
-  - Unacceptable: worse than 1:1000
-
-## Testing with Sample Data
-
-```bash
-# Start the server
-go run ./cmd/server
-
-# In another terminal, test with sample data
-curl -X POST http://localhost:8080/api/v1/validate ^
-  -H "Content-Type: application/json" ^
-  -d @testdata/sample_survey.json
-
-# Test with error-containing data
-curl -X POST http://localhost:8080/api/v1/validate ^
-  -H "Content-Type: application/json" ^
-  -d @testdata/sample_with_errors.json
+```
+survey-validator/
+├── api/                    # HTTP handlers
+│   ├── validate/index.go   # Vercel serverless function
+│   ├── health/index.go     # Health check endpoint
+│   └── server.go           # Local dev server
+├── domain/                 # Business logic
+│   ├── validators.go       # Core validation checks
+│   ├── traverse.go         # Traverse closure & adjustment
+│   ├── spatial.go          # Geometric calculations
+│   └── leveling.go         # Height validation
+├── engine/                 # Orchestration
+│   └── engine.go           # Concurrent check runner
+├── models/                 # Data structures
+│   ├── point.go            # Survey point model
+│   ├── report.go           # Validation report
+│   └── traverse.go         # Traverse adjustment model
+├── public/                 # Frontend
+│   └── index.html          # Single-file app (~3000 lines)
+├── testdata/               # Sample datasets
+│   ├── sample_survey.json
+│   └── synthetic_survey.csv
+└── vercel.json             # Deployment config
 ```
 
-## Validation Status
+---
 
-| Status | Description |
-|--------|-------------|
-| `PASS` | No errors or warnings detected |
-| `WARNING` | Warnings detected but no critical errors |
-| `FAIL` | Critical errors detected |
+## Under the Hood
 
-## Confidence Score
+### Concurrent validation
 
-The confidence score (0-100) is calculated based on issues found:
-- Error: -15 points
-- Warning: -5 points
-- Info: -1 point
+All checks run in parallel (Go goroutines). A 500-point file takes about 50-100ms.
 
-## Architecture
+### Coordinate system
 
-The system follows clean architecture principles:
+This works with **projected coordinates in meters**. If you're in UTM, State Plane, or a local grid, you're good. Lat/long won't work—project first.
 
-- **API Layer** (`api/`) - HTTP request/response handling
-- **Engine** (`engine/`) - Orchestrates concurrent validation
-- **Domain** (`domain/`) - Survey logic and spatial calculations
-- **Models** (`models/`) - Data structures
+### Outlier detection
 
-Each validation check runs independently in its own goroutine, allowing:
-- Fast parallel processing
-- Easy addition of new checks
-- Clean separation of concerns
+We use a simple 3-sigma test: find the centroid of all points, compute the standard deviation of distances from it, and flag anything beyond 3 standard deviations. Works well for clustered data; linear traverses might trigger false positives.
 
-## Limitations
+### Bowditch adjustment
 
-This system intentionally focuses on validation only:
+The classic compass rule: distribute the misclosure proportionally based on leg distances. Longer legs get more of the correction. After adjustment, your traverse closes perfectly.
 
-- ❌ No coordinate transformations
-- ❌ No spatial database integration
-- ❌ No graphical visualization
-- ❌ No adjustment algorithms
+---
 
-## Future Extensions
+## Running It Yourself
 
-Possible enhancements:
-- Coordinate system transformations
-- GIS platform integration
-- Advanced statistical analysis
-- Survey adjustment modules
-- Land registry integration
+You'll need Go 1.21 or later.
+
+```bash
+# Run locally
+go run ./cmd/server
+
+# Then open http://localhost:8080
+
+# Run tests
+go test ./...
+```
+
+To deploy your own copy on Vercel:
+
+```bash
+npm i -g vercel
+vercel --prod
+```
+
+---
+
+## What It Doesn't Do (Yet)
+
+- **Lat/long** — You need projected coordinates. Convert first.
+- **Out-of-order traverses** — Points need to be in the order you walked them.
+- **Leveling runs** — Vertical-only validation is on the roadmap.
+- **Raw angles** — We work with coordinates, not field observations.
+- **Huge files** — Keep it under ~1000 points or the browser gets sluggish.
+
+---
+
+## Maybe Someday
+
+- Leveling run validation
+- Angular misclosure from raw observations
+- Coordinate transformation between systems
+- PDF export
+- Save/load projects
+- Batch processing
+
+---
 
 ## License
 
-MIT License
+MIT. Do whatever you want with it.
+
+---
+
+## Thanks
+
+Survey math from Ghilani & Wolf's *Elementary Surveying* and *Adjustment Computations*. Built with Go and plain JavaScript—no frameworks, no build step, no npm install.
+
+---
+
+<p align="center">
+  <a href="https://surveyvalidator.vercel.app">Give it a try →</a>
+</p>
