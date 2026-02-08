@@ -770,7 +770,7 @@
                     <span style="margin-left:auto;display:flex;align-items:center;gap:8px;">
                         <label style="font-size:12px;color:var(--text-muted);">Tolerance:</label>
                         <select id="tolerancePreset" style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:4px;">
-                            <option value="high">High Precision (1mm)</option>
+                            <option value="high">Survey Grade (1mm)</option>
                             <option value="engineering" selected>Engineering (1cm)</option>
                             <option value="mapping">Mapping (10cm)</option>
                         </select>
@@ -1105,11 +1105,13 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             `;
             
             // Add visualization
+            const hasAdjusted = result.traverse_adjustment && result.traverse_adjustment.adjusted_points && result.traverse_adjustment.adjusted_points.length > 0;
             html += `
                 <div class="viz-container">
                     <div class="viz-header">
                         <div class="section-title" style="margin:0;border:0;padding:0;">Point Visualization</div>
                         <div class="viz-legend">
+                            ${hasAdjusted ? `<label style="display:flex;align-items:center;gap:4px;font-size:12px;margin-right:12px;cursor:pointer;"><input type="checkbox" id="showAdjustedToggle" onchange="toggleAdjustedView()"> Show Adjusted</label>` : ''}
                             <span class="viz-legend-item"><span class="viz-legend-dot traverse"></span>Traverse</span>
                             <span class="viz-legend-item"><span class="viz-legend-dot control"></span>Control</span>
                             <span class="viz-legend-item"><span class="viz-legend-dot detail"></span>Detail</span>
@@ -1126,13 +1128,23 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             // Add Traverse QC section if traverse adjustment was performed
             if (result.traverse_adjustment) {
                 const ta = result.traverse_adjustment;
+                
+                // Compute rating based on closure ratio
+                const ratioNum = parseInt(ta.closure_ratio.split(':')[1]) || 0;
+                let rating = 'Poor';
+                let ratingColor = 'var(--error)';
+                if (ratioNum >= 10000) { rating = 'Excellent'; ratingColor = 'var(--success)'; }
+                else if (ratioNum >= 5000) { rating = 'Good'; ratingColor = 'var(--success)'; }
+                else if (ratioNum >= ta.required_precision) { rating = 'Acceptable'; ratingColor = '#b8860b'; }
+                
                 html += `
                     <div class="section-title">Traverse Closure</div>
                     <table class="data-table" style="margin-bottom:20px;">
                         <tr><td class="label">Traverse Type</td><td>${ta.traverse_type_desc || ta.traverse_type}</td><td class="label">Status</td><td style="color:${ta.status === 'PASS' ? 'var(--success)' : 'var(--error)'}">${ta.status}</td></tr>
                         <tr><td class="label">Misclosure ΔE</td><td>${ta.sum_delta_e.toFixed(4)} m</td><td class="label">Misclosure ΔN</td><td>${ta.sum_delta_n.toFixed(4)} m</td></tr>
-                        <tr><td class="label">Linear Misclosure</td><td>${ta.linear_misclosure.toFixed(4)} m</td><td class="label">Total Length</td><td>${ta.total_distance.toFixed(3)} m</td></tr>
-                        <tr><td class="label">Closure Ratio</td><td><strong>${ta.closure_ratio}</strong></td><td class="label">Required</td><td>1:${ta.required_precision.toFixed(0)}</td></tr>
+                        <tr><td class="label">Closure Distance</td><td>${ta.linear_misclosure.toFixed(4)} m</td><td class="label">Total Traverse Length</td><td>${ta.total_distance.toFixed(3)} m</td></tr>
+                        <tr><td class="label">Closure Ratio</td><td><strong>${ta.closure_ratio}</strong></td><td class="label">Rating</td><td style="color:${ratingColor};font-weight:600;">${rating}</td></tr>
+                        <tr><td class="label">Required Precision</td><td>1:${ta.required_precision.toFixed(0)}</td><td></td><td></td></tr>
                     </table>
                 `;
                 
@@ -1226,6 +1238,12 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             return name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
 
+        function toggleAdjustedView() {
+            if (lastResult) {
+                drawVisualization(lastResult);
+            }
+        }
+
         function drawVisualization(result) {
             const canvas = document.getElementById('vizCanvas');
             if (!canvas) {
@@ -1235,6 +1253,10 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             
             const container = canvas.parentElement;
             const ctx = canvas.getContext('2d');
+            
+            // Check if showing adjusted coordinates
+            const showAdjustedToggle = document.getElementById('showAdjustedToggle');
+            const showAdjusted = showAdjustedToggle && showAdjustedToggle.checked;
             
             // Get width from container
             const width = container.clientWidth || 800;
@@ -1251,8 +1273,23 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             const padding = 60;
             
             // Get points from current input
-            const { points } = getPoints();
+            let { points } = getPoints();
             if (points.length === 0) return;
+            
+            // Apply adjusted coordinates if toggle is on and adjustment data exists
+            if (showAdjusted && result.traverse_adjustment && result.traverse_adjustment.adjusted_points) {
+                const adjMap = new Map();
+                result.traverse_adjustment.adjusted_points.forEach(ap => {
+                    adjMap.set(ap.point_id, ap);
+                });
+                points = points.map(p => {
+                    const adj = adjMap.get(p.point_id);
+                    if (adj) {
+                        return { ...p, easting: adj.adjusted_easting, northing: adj.adjusted_northing };
+                    }
+                    return p;
+                });
+            }
             
             // Find bounds
             let minE = Infinity, maxE = -Infinity, minN = Infinity, maxN = -Infinity;
@@ -1277,6 +1314,14 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             // Clear canvas
             ctx.fillStyle = '#fafafa';
             ctx.fillRect(0, 0, width, height);
+            
+            // Draw "Adjusted" label if showing adjusted coordinates
+            if (showAdjusted) {
+                ctx.fillStyle = '#0a5cc8';
+                ctx.font = 'bold 12px -apple-system, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('ADJUSTED (Bowditch)', width - 12, 20);
+            }
             
             // Draw grid
             ctx.strokeStyle = '#e4e4e7';
@@ -1418,13 +1463,20 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
         }
         
         function showPointInfo(point, isFlagged, result) {
+            // Find row number (1-based index in original input)
+            const rowNum = result.input_data ? result.input_data.points.findIndex(p => p.point_id === point.point_id) + 1 : '?';
+            
             // Find relevant issues for this point
             const issues = result.issues.filter(i => i.point_ids && i.point_ids.includes(point.point_id));
             
-            let msg = `Point: ${point.point_id}\nType: ${point.survey_type}\nEasting: ${point.easting.toFixed(3)}\nNorthing: ${point.northing.toFixed(3)}`;
+            let msg = `Row: ${rowNum}\nPoint: ${point.point_id}\nType: ${point.survey_type}\nEasting: ${point.easting.toFixed(3)}\nNorthing: ${point.northing.toFixed(3)}`;
             if (point.height) msg += `\nHeight: ${point.height.toFixed(3)}`;
             if (isFlagged && issues.length > 0) {
-                msg += `\n\nFlagged for:\n${issues.map(i => '- ' + i.description).join('\n')}`;
+                msg += `\n\n⚠ Flagged for:`;
+                issues.forEach(i => {
+                    msg += `\n• ${i.description}`;
+                    msg += `\n  Fix: ${getSuggestedFix(i)}`;
+                });
             }
             alert(msg);
         }
