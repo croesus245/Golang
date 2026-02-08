@@ -680,6 +680,27 @@
             color: var(--text-muted);
         }
 
+        .csv-options {
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--bg-muted);
+            border-radius: 6px;
+        }
+
+        .csv-option-row {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .csv-option-row label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        }
+
         .footer {
             text-align: center;
             padding: 32px 24px;
@@ -838,23 +859,50 @@
     </main>
 
     <div class="modal-overlay" id="csvModal">
-        <div class="modal">
+        <div class="modal" style="max-width:700px;">
             <div class="modal-header">
-                <div class="modal-title">Paste CSV Data</div>
+                <div class="modal-title">Import CSV Data</div>
                 <button class="modal-close" onclick="closeCsvModal()">×</button>
             </div>
             <div class="modal-body">
                 <textarea id="csvInput" placeholder="Paste CSV data here...
 
-Example:
+Example (with headers):
 PointID,Easting,Northing,Height,Type
 BM1,500000.000,6000000.000,100.5,control
-T1,500050.123,6000025.456,101.2,traverse"></textarea>
+
+Example (without headers):
+bo,556621.876,715059.353,2.208
+bo1,556625.394,715058.507,2.16"></textarea>
+                
+                <div class="csv-options">
+                    <div class="csv-option-row">
+                        <label><input type="checkbox" id="csvHasHeaders" checked> First row is header</label>
+                        <label style="margin-left:20px;"><input type="checkbox" id="csvAutoType" checked> Auto-detect type from point name</label>
+                    </div>
+                    <div id="columnMappingSection" style="display:none;margin-top:12px;">
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Column Mapping (1-based index or leave blank to skip):</div>
+                        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+                            <div><label style="font-size:11px;">Point ID</label><input type="number" id="colPointId" value="1" min="1" style="width:100%;padding:4px;"></div>
+                            <div><label style="font-size:11px;">Easting</label><input type="number" id="colEasting" value="2" min="1" style="width:100%;padding:4px;"></div>
+                            <div><label style="font-size:11px;">Northing</label><input type="number" id="colNorthing" value="3" min="1" style="width:100%;padding:4px;"></div>
+                            <div><label style="font-size:11px;">Height</label><input type="number" id="colHeight" value="4" min="1" style="width:100%;padding:4px;"></div>
+                            <div><label style="font-size:11px;">Type</label><input type="number" id="colType" value="5" min="1" style="width:100%;padding:4px;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="csvPreview" style="display:none;margin-top:12px;">
+                    <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Preview (first 5 rows):</div>
+                    <table class="issues-table" style="font-size:11px;" id="csvPreviewTable"></table>
+                </div>
+                
                 <p class="help-text">
-                    Accepted formats: CSV with headers (PointID, Easting, Northing, Height, Type) or tab-separated values. Height and Type columns are optional.
+                    Supports comma or tab-separated values. For headerless data, uncheck "First row is header" and set column positions.
                 </p>
             </div>
             <div class="modal-footer">
+                <button class="btn" onclick="previewCsv()">Preview</button>
                 <button class="btn" onclick="closeCsvModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="parseCsvInput()">Import</button>
             </div>
@@ -1571,41 +1619,183 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             document.getElementById('csvModal').classList.remove('show');
         }
 
+        function detectTypeFromName(name) {
+            const n = name.toLowerCase();
+            // Control point patterns
+            if (/^(cp|bm|gcp|ctrl|control|bench)/i.test(n)) return 'control';
+            // Traverse point patterns  
+            if (/^(tp|t\d|stn|sta|trav|peg)/i.test(n)) return 'traverse';
+            // Everything else is detail
+            return 'detail';
+        }
+
+        function autoDetectColumns(firstRow, delimiter) {
+            const values = firstRow.split(delimiter).map(v => v.trim());
+            let result = { pointId: -1, easting: -1, northing: -1, height: -1, type: -1 };
+            
+            // Find columns by checking if values look like coordinates
+            values.forEach((val, idx) => {
+                const num = parseFloat(val);
+                if (isNaN(num)) {
+                    // Non-numeric - likely point ID or type
+                    if (result.pointId === -1 && val.length > 0) {
+                        const lv = val.toLowerCase();
+                        if (['traverse','control','detail'].includes(lv)) {
+                            result.type = idx;
+                        } else {
+                            result.pointId = idx;
+                        }
+                    }
+                } else {
+                    // Numeric - coordinate or height
+                    if (num > 100000) {
+                        // Large numbers are likely coordinates
+                        if (result.easting === -1) result.easting = idx;
+                        else if (result.northing === -1) result.northing = idx;
+                    } else if (result.height === -1 && result.easting !== -1 && result.northing !== -1) {
+                        result.height = idx;
+                    }
+                }
+            });
+            
+            // Fallback: if no large coords found, assume order is ID, E, N, H
+            if (result.easting === -1 || result.northing === -1) {
+                let numericCols = values.map((v, i) => ({ i, n: parseFloat(v) })).filter(x => !isNaN(x.n));
+                if (numericCols.length >= 2) {
+                    result.easting = numericCols[0].i;
+                    result.northing = numericCols[1].i;
+                    if (numericCols.length >= 3) result.height = numericCols[2].i;
+                }
+            }
+            
+            return result;
+        }
+
+        function previewCsv() {
+            const input = document.getElementById('csvInput').value.trim();
+            if (!input) { alert('Paste CSV data first.'); return; }
+            
+            const lines = input.split('\n').filter(line => line.trim());
+            if (lines.length === 0) return;
+            
+            const hasHeaders = document.getElementById('csvHasHeaders').checked;
+            const delimiter = lines[0].includes('\t') ? '\t' : ',';
+            
+            // Auto-detect columns from first data row
+            const dataRow = hasHeaders ? lines[1] : lines[0];
+            if (!dataRow) return;
+            
+            const detected = autoDetectColumns(dataRow, delimiter);
+            
+            // Update column mapping UI
+            if (!hasHeaders) {
+                document.getElementById('columnMappingSection').style.display = 'block';
+                document.getElementById('colPointId').value = detected.pointId >= 0 ? detected.pointId + 1 : '';
+                document.getElementById('colEasting').value = detected.easting >= 0 ? detected.easting + 1 : '';
+                document.getElementById('colNorthing').value = detected.northing >= 0 ? detected.northing + 1 : '';
+                document.getElementById('colHeight').value = detected.height >= 0 ? detected.height + 1 : '';
+                document.getElementById('colType').value = detected.type >= 0 ? detected.type + 1 : '';
+            } else {
+                document.getElementById('columnMappingSection').style.display = 'none';
+            }
+            
+            // Build preview table
+            const previewDiv = document.getElementById('csvPreview');
+            const previewTable = document.getElementById('csvPreviewTable');
+            const autoType = document.getElementById('csvAutoType').checked;
+            
+            let html = '<thead><tr><th>Point ID</th><th>Easting</th><th>Northing</th><th>Height</th><th>Type</th></tr></thead><tbody>';
+            
+            const startIdx = hasHeaders ? 1 : 0;
+            const endIdx = Math.min(startIdx + 5, lines.length);
+            
+            for (let i = startIdx; i < endIdx; i++) {
+                const values = lines[i].split(delimiter).map(v => v.trim().replace(/^["']|["']$/g, ''));
+                const pointId = detected.pointId >= 0 ? values[detected.pointId] : '—';
+                const easting = detected.easting >= 0 ? values[detected.easting] : '—';
+                const northing = detected.northing >= 0 ? values[detected.northing] : '—';
+                const height = detected.height >= 0 ? values[detected.height] : '—';
+                let type = detected.type >= 0 ? values[detected.type] : '';
+                if (autoType && pointId !== '—') type = detectTypeFromName(pointId);
+                if (!type) type = 'detail';
+                html += `<tr><td>${pointId}</td><td>${easting}</td><td>${northing}</td><td>${height}</td><td>${type}</td></tr>`;
+            }
+            html += '</tbody>';
+            previewTable.innerHTML = html;
+            previewDiv.style.display = 'block';
+        }
+
         function parseCsvInput() {
             const input = document.getElementById('csvInput').value.trim();
             if (!input) { alert('Paste CSV data first.'); return; }
             
             const lines = input.split('\n').filter(line => line.trim());
-            if (lines.length < 2) { alert('Include header row and at least one data row.'); return; }
+            if (lines.length === 0) { alert('No data found.'); return; }
             
+            const hasHeaders = document.getElementById('csvHasHeaders').checked;
+            const autoType = document.getElementById('csvAutoType').checked;
             const delimiter = lines[0].includes('\t') ? '\t' : ',';
-            const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
             
-            const pointIdIdx = headers.findIndex(h => h.includes('point') || h.includes('id') || h.includes('name'));
-            const eastingIdx = headers.findIndex(h => h.includes('east') || h.includes('x') || h === 'e');
-            const northingIdx = headers.findIndex(h => h.includes('north') || h.includes('y') || h === 'n');
-            const heightIdx = headers.findIndex(h => h.includes('height') || h.includes('z') || h.includes('elev'));
-            const typeIdx = headers.findIndex(h => h.includes('type'));
+            let pointIdIdx, eastingIdx, northingIdx, heightIdx, typeIdx;
             
-            if (eastingIdx === -1 || northingIdx === -1) {
-                alert('Cannot identify Easting and Northing columns.');
+            if (hasHeaders) {
+                const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
+                pointIdIdx = headers.findIndex(h => h.includes('point') || h.includes('id') || h.includes('name'));
+                eastingIdx = headers.findIndex(h => h.includes('east') || h.includes('x') || h === 'e');
+                northingIdx = headers.findIndex(h => h.includes('north') || h.includes('y') || h === 'n');
+                heightIdx = headers.findIndex(h => h.includes('height') || h.includes('z') || h.includes('elev'));
+                typeIdx = headers.findIndex(h => h.includes('type'));
+            } else {
+                // Use manual column mapping or auto-detected values
+                const dataRow = lines[0];
+                const detected = autoDetectColumns(dataRow, delimiter);
+                
+                const colPid = document.getElementById('colPointId').value;
+                const colE = document.getElementById('colEasting').value;
+                const colN = document.getElementById('colNorthing').value;
+                const colH = document.getElementById('colHeight').value;
+                const colT = document.getElementById('colType').value;
+                
+                pointIdIdx = colPid ? parseInt(colPid) - 1 : detected.pointId;
+                eastingIdx = colE ? parseInt(colE) - 1 : detected.easting;
+                northingIdx = colN ? parseInt(colN) - 1 : detected.northing;
+                heightIdx = colH ? parseInt(colH) - 1 : detected.height;
+                typeIdx = colT ? parseInt(colT) - 1 : detected.type;
+            }
+            
+            if (eastingIdx < 0 || northingIdx < 0) {
+                alert('Cannot identify Easting and Northing columns. Please verify column mapping.');
                 return;
             }
             
             document.getElementById('pointsBody').innerHTML = '';
             rowCount = 0;
             
-            for (let i = 1; i < lines.length; i++) {
+            const startIdx = hasHeaders ? 1 : 0;
+            let importedCount = 0;
+            
+            for (let i = startIdx; i < lines.length; i++) {
                 const values = lines[i].split(delimiter).map(v => v.trim().replace(/^["']|["']$/g, ''));
-                const pointId = pointIdIdx >= 0 ? values[pointIdIdx] : '';
-                const easting = values[eastingIdx] || '';
-                const northing = values[northingIdx] || '';
+                
+                // Skip rows with empty coordinates
+                const easting = eastingIdx >= 0 ? values[eastingIdx] : '';
+                const northing = northingIdx >= 0 ? values[northingIdx] : '';
+                if (!easting || !northing) continue;
+                
+                const pointId = pointIdIdx >= 0 ? values[pointIdIdx] : `P${importedCount + 1}`;
                 const height = heightIdx >= 0 ? values[heightIdx] : '';
-                let type = typeIdx >= 0 ? values[typeIdx].toLowerCase() : 'traverse';
-                if (!['traverse', 'control', 'detail'].includes(type)) type = 'traverse';
+                
+                let type = typeIdx >= 0 ? (values[typeIdx] || '').toLowerCase() : '';
+                if (!['traverse', 'control', 'detail'].includes(type)) {
+                    type = autoType ? detectTypeFromName(pointId) : 'detail';
+                }
+                
                 addRow(pointId, easting, northing, height, type);
+                importedCount++;
             }
+            
             closeCsvModal();
+            alert(`Imported ${importedCount} points.`);
         }
 
         function handleFileUpload(event) {
@@ -1615,6 +1805,8 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             reader.onload = function(e) {
                 document.getElementById('csvInput').value = e.target.result;
                 document.getElementById('csvModal').classList.add('show');
+                // Trigger preview
+                setTimeout(() => previewCsv(), 100);
             };
             reader.readAsText(file);
             event.target.value = '';
@@ -1623,6 +1815,11 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
         function toggleAccordion(id) {
             document.getElementById(id).classList.toggle('open');
         }
+
+        // Toggle column mapping when header checkbox changes
+        document.getElementById('csvHasHeaders')?.addEventListener('change', function() {
+            document.getElementById('columnMappingSection').style.display = this.checked ? 'none' : 'block';
+        });
 
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCsvModal(); });
         document.getElementById('csvModal').addEventListener('click', e => {
