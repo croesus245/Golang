@@ -767,6 +767,14 @@
                         Upload File
                         <input type="file" accept=".csv,.txt" onchange="handleFileUpload(event)" style="display:none;">
                     </label>
+                    <span style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+                        <label style="font-size:12px;color:var(--text-muted);">Tolerance:</label>
+                        <select id="tolerancePreset" style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:4px;">
+                            <option value="high">High Precision (1mm)</option>
+                            <option value="engineering" selected>Engineering (1cm)</option>
+                            <option value="mapping">Mapping (10cm)</option>
+                        </select>
+                    </span>
                 </div>
 
                 <div class="table-wrap">
@@ -802,7 +810,7 @@
                 <ul>
                     <li>Coordinates must be in a projected coordinate system (meters). Geographic coordinates (latitude/longitude) are not supported.</li>
                     <li>Traverse closure assumes points are entered in sequential order along the traverse path.</li>
-                    <li>Outlier detection uses a 3-sigma threshold from the centroid.</li>
+                    <li>Outlier detection uses a 3-sigma threshold from centroid; best suited for clustered detail points rather than linear traverses.</li>
                     <li>Duplicate threshold is 1mm; near-duplicate threshold is 1cm.</li>
                     <li>Traverse precision ratings: Good at 1:10000 or better, Acceptable at 1:5000 or better.</li>
                 </ul>
@@ -1078,7 +1086,8 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
                     <dl class="report-status">
                         <dt>Result</dt>
                         <dd class="${statusCls[result.status]}">${statusText[result.status]}</dd>
-                        <dt>Confidence Score</dt>
+                        <dt style="font-size:10px;color:var(--text-muted);margin-top:-8px;">PASS=no errors, WARN=warnings, FAIL=errors</dt>
+                        <dt style="margin-top:8px;">Confidence Score</dt>
                         <dd>${result.confidence_score}%</dd>
                     </dl>
                     <div class="report-meta">
@@ -1113,6 +1122,56 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
                     </div>
                 </div>
             `;
+            
+            // Add Traverse QC section if traverse adjustment was performed
+            if (result.traverse_adjustment) {
+                const ta = result.traverse_adjustment;
+                html += `
+                    <div class="section-title">Traverse Closure</div>
+                    <table class="data-table" style="margin-bottom:20px;">
+                        <tr><td class="label">Traverse Type</td><td>${ta.traverse_type_desc || ta.traverse_type}</td><td class="label">Status</td><td style="color:${ta.status === 'PASS' ? 'var(--success)' : 'var(--error)'}">${ta.status}</td></tr>
+                        <tr><td class="label">Misclosure ΔE</td><td>${ta.sum_delta_e.toFixed(4)} m</td><td class="label">Misclosure ΔN</td><td>${ta.sum_delta_n.toFixed(4)} m</td></tr>
+                        <tr><td class="label">Linear Misclosure</td><td>${ta.linear_misclosure.toFixed(4)} m</td><td class="label">Total Length</td><td>${ta.total_distance.toFixed(3)} m</td></tr>
+                        <tr><td class="label">Closure Ratio</td><td><strong>${ta.closure_ratio}</strong></td><td class="label">Required</td><td>1:${ta.required_precision.toFixed(0)}</td></tr>
+                    </table>
+                `;
+                
+                // Add adjusted coordinates table if available
+                if (ta.adjusted_points && ta.adjusted_points.length > 0) {
+                    html += `
+                        <div class="section-title">Adjusted Coordinates (Bowditch)</div>
+                        <table class="issues-table" style="margin-bottom:12px;">
+                            <thead>
+                                <tr>
+                                    <th>Point ID</th>
+                                    <th>Original E</th>
+                                    <th>Original N</th>
+                                    <th>Correction E</th>
+                                    <th>Correction N</th>
+                                    <th>Adjusted E</th>
+                                    <th>Adjusted N</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${ta.adjusted_points.map(p => `
+                                    <tr>
+                                        <td>${p.point_id}</td>
+                                        <td>${p.raw_easting.toFixed(3)}</td>
+                                        <td>${p.raw_northing.toFixed(3)}</td>
+                                        <td>${p.residual_e >= 0 ? '+' : ''}${p.residual_e.toFixed(4)}</td>
+                                        <td>${p.residual_n >= 0 ? '+' : ''}${p.residual_n.toFixed(4)}</td>
+                                        <td><strong>${p.adjusted_easting.toFixed(3)}</strong></td>
+                                        <td><strong>${p.adjusted_northing.toFixed(3)}</strong></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        <div style="margin-bottom:20px;">
+                            <button class="btn" onclick="downloadAdjustedCSV()">Download Adjusted Coordinates (CSV)</button>
+                        </div>
+                    `;
+                }
+            }
             
             html += `<div class="section-title">Issues (${result.issues.length})</div>`;
             
@@ -1320,6 +1379,54 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             ctx.rotate(-Math.PI / 2);
             ctx.fillText('Northing (m)', 0, 0);
             ctx.restore();
+            
+            // Store point positions for click detection
+            canvas._pointPositions = points.map(p => ({
+                x: scaleX(p.easting),
+                y: scaleY(p.northing),
+                point: p,
+                isFlagged: flaggedIds.has(p.point_id)
+            }));
+            canvas._result = result;
+            
+            // Add click handler if not already added
+            if (!canvas._clickHandlerAdded) {
+                canvas._clickHandlerAdded = true;
+                canvas.addEventListener('click', handleCanvasClick);
+            }
+        }
+        
+        function handleCanvasClick(e) {
+            const canvas = e.target;
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const x = (e.clientX - rect.left);
+            const y = (e.clientY - rect.top);
+            
+            if (!canvas._pointPositions) return;
+            
+            // Find clicked point (within 15px radius)
+            const clicked = canvas._pointPositions.find(p => {
+                const dx = p.x - x;
+                const dy = p.y - y;
+                return Math.sqrt(dx*dx + dy*dy) < 15;
+            });
+            
+            if (clicked) {
+                showPointInfo(clicked.point, clicked.isFlagged, canvas._result);
+            }
+        }
+        
+        function showPointInfo(point, isFlagged, result) {
+            // Find relevant issues for this point
+            const issues = result.issues.filter(i => i.point_ids && i.point_ids.includes(point.point_id));
+            
+            let msg = `Point: ${point.point_id}\nType: ${point.survey_type}\nEasting: ${point.easting.toFixed(3)}\nNorthing: ${point.northing.toFixed(3)}`;
+            if (point.height) msg += `\nHeight: ${point.height.toFixed(3)}`;
+            if (isFlagged && issues.length > 0) {
+                msg += `\n\nFlagged for:\n${issues.map(i => '- ' + i.description).join('\n')}`;
+            }
+            alert(msg);
         }
 
         function getSuggestedFix(issue) {
@@ -1340,6 +1447,25 @@ T1,500050.123,6000025.456,101.2,traverse"></textarea>
             const a = document.createElement('a');
             a.href = url;
             a.download = `validation-report-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadAdjustedCSV() {
+            if (!lastResult || !lastResult.traverse_adjustment || !lastResult.traverse_adjustment.adjusted_points) {
+                alert('No adjusted coordinates available.');
+                return;
+            }
+            const pts = lastResult.traverse_adjustment.adjusted_points;
+            let csv = 'PointID,OriginalE,OriginalN,CorrectionE,CorrectionN,AdjustedE,AdjustedN\n';
+            pts.forEach(p => {
+                csv += `${p.point_id},${p.raw_easting.toFixed(4)},${p.raw_northing.toFixed(4)},${p.residual_e.toFixed(4)},${p.residual_n.toFixed(4)},${p.adjusted_easting.toFixed(4)},${p.adjusted_northing.toFixed(4)}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `adjusted-coordinates-${new Date().toISOString().slice(0,10)}.csv`;
             a.click();
             URL.revokeObjectURL(url);
         }
