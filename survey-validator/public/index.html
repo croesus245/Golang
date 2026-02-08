@@ -594,39 +594,163 @@
 
         .viz-canvas-wrap {
             border: 1px solid var(--border);
-            background: #fff;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             position: relative;
             min-height: 400px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
         }
 
         #vizCanvas {
             display: block;
+            cursor: crosshair;
+            transition: opacity 0.3s ease;
+        }
+
+        #vizCanvas:hover {
+            opacity: 0.98;
         }
 
         .viz-legend {
             display: flex;
-            gap: 16px;
-            font-size: 12px;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
+            margin-bottom: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
         }
 
         .viz-legend-item {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
 
-        .viz-legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
+        .viz-legend-shape {
+            font-size: 12px;
+            width: 16px;
+            text-align: center;
         }
 
-        .viz-legend-dot.traverse { background: #2563eb; }
-        .viz-legend-dot.control { background: #16a34a; }
-        .viz-legend-dot.detail { background: #6b7280; }
-        .viz-legend-dot.flagged { background: #dc2626; }
+        .viz-legend-shape.traverse { color: #2563eb; }
+        .viz-legend-shape.control { color: #16a34a; }
+        .viz-legend-shape.detail { color: #6b7280; }
+        .viz-legend-shape.flagged { color: #dc2626; }
         .viz-legend-line { width: 16px; height: 2px; background: #94a3b8; }
+
+        .viz-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .viz-btn {
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: all 0.15s ease;
+        }
+
+        .viz-btn:hover {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            color: var(--text);
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .viz-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .viz-btn.primary {
+            background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+            border-color: #1d4ed8;
+            color: #fff;
+        }
+
+        .viz-btn.primary:hover {
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+            color: #fff;
+        }
+
+        .viz-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 6px 10px;
+            background: var(--bg-white);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .viz-toggle:hover {
+            background: var(--bg-muted);
+            border-color: #cbd5e1;
+        }
+
+        .viz-tooltip {
+            display: none;
+            position: absolute;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+            max-width: 280px;
+            line-height: 1.5;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .viz-tooltip.visible {
+            display: block;
+            animation: tooltipFadeIn 0.15s ease-out;
+        }
+
+        @keyframes tooltipFadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .viz-tooltip-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            padding-bottom: 8px;
+            font-size: 13px;
+            color: #f1f5f9;
+        }
+
+        .viz-tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 2px 0;
+        }
+
+        .viz-tooltip-label {
+            color: #94a3b8;
+            font-weight: 500;
+        }
 
         .export-row {
             display: flex;
@@ -744,7 +868,6 @@
             align-items: center;
             gap: 6px;
             cursor: pointer;
-        }
         }
 
         .footer {
@@ -1233,18 +1356,19 @@ bo1,556625.394,715058.507,2.16"></textarea>
             html += `
                 <div class="viz-container">
                     <div class="viz-header">
-                        <div class="section-title" style="margin:0;border:0;padding:0;">Point Visualization</div>
-                        <div class="viz-legend">
-                            ${hasAdjusted ? `<label style="display:flex;align-items:center;gap:4px;font-size:12px;margin-right:12px;cursor:pointer;"><input type="checkbox" id="showAdjustedToggle" onchange="toggleAdjustedView()"> Show Adjusted</label>` : ''}
-                            <span class="viz-legend-item"><span class="viz-legend-dot traverse"></span>Traverse</span>
-                            <span class="viz-legend-item"><span class="viz-legend-dot control"></span>Control</span>
-                            <span class="viz-legend-item"><span class="viz-legend-dot detail"></span>Detail</span>
-                            <span class="viz-legend-item"><span class="viz-legend-dot flagged"></span>Flagged</span>
-                            <span class="viz-legend-item"><span class="viz-legend-line"></span>Traverse Path</span>
+                        <div class="section-title" style="margin:0;border:0;padding:0;">📍 Point Visualization</div>
+                        <div class="viz-controls">
+                            <button class="viz-btn" onclick="vizZoom(1.25)" title="Zoom In">＋</button>
+                            <button class="viz-btn" onclick="vizZoom(0.8)" title="Zoom Out">−</button>
+                            <button class="viz-btn" onclick="vizReset()" title="Reset View">↺</button>
+                            <label class="viz-toggle"><input type="checkbox" id="showLabelsToggle" checked onchange="redrawViz()"> 🏷️ Labels</label>
+                            ${hasAdjusted ? `<label class="viz-toggle"><input type="checkbox" id="showAdjustedToggle" onchange="toggleAdjustedView()"> ✓ Adjusted</label>` : ''}
+                            <button class="viz-btn primary" onclick="exportVizPNG()" title="Download PNG">📥 Export</button>
                         </div>
                     </div>
-                    <div class="viz-canvas-wrap">
+                    <div class="viz-canvas-wrap" style="position:relative;">
                         <canvas id="vizCanvas"></canvas>
+                        <div id="vizTooltip" class="viz-tooltip"></div>
                     </div>
                 </div>
             `;
@@ -1368,6 +1492,37 @@ bo1,556625.394,715058.507,2.16"></textarea>
             }
         }
 
+        function redrawViz() {
+            if (lastResult) drawVisualization(lastResult);
+        }
+
+        // Visualization state
+        let vizZoomLevel = 1;
+        let vizPanX = 0;
+        let vizPanY = 0;
+
+        function vizZoom(factor) {
+            vizZoomLevel *= factor;
+            vizZoomLevel = Math.max(0.5, Math.min(5, vizZoomLevel));
+            redrawViz();
+        }
+
+        function vizReset() {
+            vizZoomLevel = 1;
+            vizPanX = 0;
+            vizPanY = 0;
+            redrawViz();
+        }
+
+        function exportVizPNG() {
+            const canvas = document.getElementById('vizCanvas');
+            if (!canvas) return;
+            const link = document.createElement('a');
+            link.download = `survey-viz-${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
         function drawVisualization(result) {
             const canvas = document.getElementById('vizCanvas');
             if (!canvas) {
@@ -1378,13 +1533,15 @@ bo1,556625.394,715058.507,2.16"></textarea>
             const container = canvas.parentElement;
             const ctx = canvas.getContext('2d');
             
-            // Check if showing adjusted coordinates
+            // Check toggles
             const showAdjustedToggle = document.getElementById('showAdjustedToggle');
             const showAdjusted = showAdjustedToggle && showAdjustedToggle.checked;
+            const showLabelsToggle = document.getElementById('showLabelsToggle');
+            const showLabels = showLabelsToggle ? showLabelsToggle.checked : true;
             
             // Get width from container
             const width = container.clientWidth || 800;
-            const height = 400;
+            const height = 450;
             
             // Set canvas size for sharp rendering
             const dpr = window.devicePixelRatio || 1;
@@ -1394,7 +1551,7 @@ bo1,556625.394,715058.507,2.16"></textarea>
             canvas.style.height = height + 'px';
             ctx.scale(dpr, dpr);
             
-            const padding = 60;
+            const padding = 65;
             
             // Get points from current input
             let { points } = getPoints();
@@ -1424,35 +1581,77 @@ bo1,556625.394,715058.507,2.16"></textarea>
                 maxN = Math.max(maxN, p.northing);
             });
             
-            // Add buffer
-            const rangeE = maxE - minE || 1;
-            const rangeN = maxN - minN || 1;
+            // Add buffer and apply zoom
+            const rangeE = (maxE - minE || 1) / vizZoomLevel;
+            const rangeN = (maxN - minN || 1) / vizZoomLevel;
+            const centerE = (maxE + minE) / 2;
+            const centerN = (maxN + minN) / 2;
             const buffer = Math.max(rangeE, rangeN) * 0.1;
-            minE -= buffer; maxE += buffer;
-            minN -= buffer; maxN += buffer;
+            minE = centerE - rangeE / 2 - buffer;
+            maxE = centerE + rangeE / 2 + buffer;
+            minN = centerN - rangeN / 2 - buffer;
+            maxN = centerN + rangeN / 2 + buffer;
+            
+            // Store scale for later use (meters per pixel)
+            const metersPerPixelE = (maxE - minE) / (width - 2 * padding);
+            const metersPerPixelN = (maxN - minN) / (height - 2 * padding);
+            const metersPerPixel = Math.max(metersPerPixelE, metersPerPixelN);
             
             // Scale functions
             const scaleX = (e) => padding + ((e - minE) / (maxE - minE)) * (width - 2 * padding);
             const scaleY = (n) => height - padding - ((n - minN) / (maxN - minN)) * (height - 2 * padding);
             
-            // Clear canvas
-            ctx.fillStyle = '#fafafa';
+            // Clear canvas with gradient background
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+            bgGradient.addColorStop(0, '#f8fafc');
+            bgGradient.addColorStop(0.5, '#f1f5f9');
+            bgGradient.addColorStop(1, '#e2e8f0');
+            ctx.fillStyle = bgGradient;
             ctx.fillRect(0, 0, width, height);
+            
+            // Draw subtle topographic-style background pattern
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 20; i++) {
+                const yPos = padding + (i / 20) * (height - 2 * padding);
+                ctx.beginPath();
+                ctx.moveTo(padding, yPos);
+                for (let x = padding; x <= width - padding; x += 5) {
+                    ctx.lineTo(x, yPos + Math.sin(x * 0.02 + i) * 2);
+                }
+                ctx.stroke();
+            }
+            
+            // Draw plot area with subtle shadow
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 4;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(padding - 5, padding - 5, width - 2 * padding + 10, height - 2 * padding + 10);
+            ctx.restore();
             
             // Draw "Adjusted" label if showing adjusted coordinates
             if (showAdjusted) {
+                ctx.save();
+                ctx.shadowColor = 'rgba(10, 92, 200, 0.3)';
+                ctx.shadowBlur = 8;
                 ctx.fillStyle = '#0a5cc8';
                 ctx.font = 'bold 12px -apple-system, sans-serif';
                 ctx.textAlign = 'right';
-                ctx.fillText('ADJUSTED (Bowditch)', width - 12, 20);
+                ctx.fillText('✓ ADJUSTED (Bowditch)', width - 12, 20);
+                ctx.restore();
             }
             
-            // Draw grid
-            ctx.strokeStyle = '#e4e4e7';
+            // Draw refined grid
+            ctx.strokeStyle = 'rgba(203, 213, 225, 0.6)';
             ctx.lineWidth = 1;
-            for (let i = 0; i <= 5; i++) {
-                const x = padding + (i / 5) * (width - 2 * padding);
-                const y = padding + (i / 5) * (height - 2 * padding);
+            ctx.setLineDash([]);
+            for (let i = 0; i <= 10; i++) {
+                const x = padding + (i / 10) * (width - 2 * padding);
+                const y = padding + (i / 10) * (height - 2 * padding);
+                ctx.strokeStyle = i % 2 === 0 ? 'rgba(148, 163, 184, 0.4)' : 'rgba(203, 213, 225, 0.25)';
                 ctx.beginPath();
                 ctx.moveTo(x, padding);
                 ctx.lineTo(x, height - padding);
@@ -1492,64 +1691,350 @@ bo1,556625.394,715058.507,2.16"></textarea>
             // Get traverse points in order
             const traversePoints = points.filter(p => p.survey_type === 'traverse');
             
-            // Draw traverse lines
+            // Draw traverse lines with gradient and glow
             if (traversePoints.length > 1) {
-                ctx.strokeStyle = '#94a3b8';
-                ctx.lineWidth = 2;
+                // Outer glow
+                ctx.save();
+                ctx.shadowColor = 'rgba(37, 99, 235, 0.4)';
+                ctx.shadowBlur = 8;
+                ctx.strokeStyle = 'rgba(37, 99, 235, 0.3)';
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.setLineDash([]);
                 ctx.beginPath();
                 ctx.moveTo(scaleX(traversePoints[0].easting), scaleY(traversePoints[0].northing));
                 for (let i = 1; i < traversePoints.length; i++) {
                     ctx.lineTo(scaleX(traversePoints[i].easting), scaleY(traversePoints[i].northing));
                 }
                 ctx.stroke();
+                ctx.restore();
+                
+                // Main traverse line
+                const lineGrad = ctx.createLinearGradient(
+                    scaleX(traversePoints[0].easting), scaleY(traversePoints[0].northing),
+                    scaleX(traversePoints[traversePoints.length-1].easting), scaleY(traversePoints[traversePoints.length-1].northing)
+                );
+                lineGrad.addColorStop(0, '#3b82f6');
+                lineGrad.addColorStop(0.5, '#2563eb');
+                lineGrad.addColorStop(1, '#1d4ed8');
+                ctx.strokeStyle = lineGrad;
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(scaleX(traversePoints[0].easting), scaleY(traversePoints[0].northing));
+                for (let i = 1; i < traversePoints.length; i++) {
+                    ctx.lineTo(scaleX(traversePoints[i].easting), scaleY(traversePoints[i].northing));
+                }
+                ctx.stroke();
+                
+                // Draw direction arrows along traverse
+                for (let i = 0; i < traversePoints.length - 1; i++) {
+                    const x1 = scaleX(traversePoints[i].easting);
+                    const y1 = scaleY(traversePoints[i].northing);
+                    const x2 = scaleX(traversePoints[i + 1].easting);
+                    const y2 = scaleY(traversePoints[i + 1].northing);
+                    const midX = (x1 + x2) / 2;
+                    const midY = (y1 + y2) / 2;
+                    const angle = Math.atan2(y2 - y1, x2 - x1);
+                    const arrowSize = 6;
+                    
+                    ctx.save();
+                    ctx.translate(midX, midY);
+                    ctx.rotate(angle);
+                    ctx.fillStyle = '#1d4ed8';
+                    ctx.beginPath();
+                    ctx.moveTo(arrowSize, 0);
+                    ctx.lineTo(-arrowSize * 0.5, -arrowSize * 0.5);
+                    ctx.lineTo(-arrowSize * 0.5, arrowSize * 0.5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
             }
             
-            // Draw points
+            // Draw points with different shapes - professional styling
             const colors = {
-                traverse: '#2563eb',
-                control: '#16a34a',
-                detail: '#6b7280'
+                traverse: { fill: '#3b82f6', glow: 'rgba(59, 130, 246, 0.5)', stroke: '#1d4ed8' },
+                control: { fill: '#22c55e', glow: 'rgba(34, 197, 94, 0.5)', stroke: '#15803d' },
+                detail: { fill: '#94a3b8', glow: 'rgba(148, 163, 184, 0.4)', stroke: '#64748b' }
             };
+            const flaggedColor = { fill: '#ef4444', glow: 'rgba(239, 68, 68, 0.6)', stroke: '#b91c1c' };
             
-            points.forEach(p => {
+            function drawTriangle(ctx, x, y, size, colorObj, hasShadow) {
+                if (hasShadow) {
+                    ctx.save();
+                    ctx.shadowColor = colorObj.glow;
+                    ctx.shadowBlur = 12;
+                }
+                ctx.beginPath();
+                ctx.moveTo(x, y - size);
+                ctx.lineTo(x - size * 0.866, y + size * 0.5);
+                ctx.lineTo(x + size * 0.866, y + size * 0.5);
+                ctx.closePath();
+                ctx.fillStyle = colorObj.fill;
+                ctx.fill();
+                ctx.strokeStyle = colorObj.stroke;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                if (hasShadow) ctx.restore();
+            }
+            
+            function drawDiamond(ctx, x, y, size, colorObj, hasShadow) {
+                if (hasShadow) {
+                    ctx.save();
+                    ctx.shadowColor = colorObj.glow;
+                    ctx.shadowBlur = 10;
+                }
+                ctx.beginPath();
+                ctx.moveTo(x, y - size);
+                ctx.lineTo(x + size, y);
+                ctx.lineTo(x, y + size);
+                ctx.lineTo(x - size, y);
+                ctx.closePath();
+                ctx.fillStyle = colorObj.fill;
+                ctx.fill();
+                ctx.strokeStyle = colorObj.stroke;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                if (hasShadow) ctx.restore();
+            }
+            
+            function drawCircle(ctx, x, y, size, colorObj, hasShadow) {
+                if (hasShadow) {
+                    ctx.save();
+                    ctx.shadowColor = colorObj.glow;
+                    ctx.shadowBlur = 10;
+                }
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = colorObj.fill;
+                ctx.fill();
+                ctx.strokeStyle = colorObj.stroke;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                if (hasShadow) ctx.restore();
+            }
+            
+            // Draw detail points first (below others)
+            points.filter(p => p.survey_type === 'detail').forEach(p => {
                 const x = scaleX(p.easting);
                 const y = scaleY(p.northing);
                 const isFlagged = flaggedIds.has(p.point_id);
-                const radius = isFlagged ? 7 : 5;
-                
-                // Draw point
-                ctx.beginPath();
-                ctx.arc(x, y, radius, 0, Math.PI * 2);
-                ctx.fillStyle = isFlagged ? '#dc2626' : (colors[p.survey_type] || '#6b7280');
-                ctx.fill();
-                
-                if (isFlagged) {
-                    ctx.strokeStyle = '#dc2626';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(x, y, radius + 4, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-                
-                // Draw label
-                ctx.fillStyle = '#18181b';
-                ctx.font = '11px -apple-system, sans-serif';
-                ctx.textAlign = 'left';
-                ctx.fillText(p.point_id, x + radius + 4, y + 3);
+                const size = isFlagged ? 7 : 5;
+                const colorObj = isFlagged ? flaggedColor : colors.detail;
+                drawDiamond(ctx, x, y, size, colorObj, isFlagged);
             });
+            
+            // Draw traverse points
+            points.filter(p => p.survey_type === 'traverse').forEach(p => {
+                const x = scaleX(p.easting);
+                const y = scaleY(p.northing);
+                const isFlagged = flaggedIds.has(p.point_id);
+                const size = isFlagged ? 8 : 6;
+                const colorObj = isFlagged ? flaggedColor : colors.traverse;
+                drawCircle(ctx, x, y, size, colorObj, true);
+            });
+            
+            // Draw control points on top
+            points.filter(p => p.survey_type === 'control').forEach(p => {
+                const x = scaleX(p.easting);
+                const y = scaleY(p.northing);
+                const isFlagged = flaggedIds.has(p.point_id);
+                const size = isFlagged ? 10 : 8;
+                const colorObj = isFlagged ? flaggedColor : colors.control;
+                drawTriangle(ctx, x, y, size, colorObj, true);
+            });
+            
+            // Draw flagged pulsing rings
+            points.filter(p => flaggedIds.has(p.point_id)).forEach(p => {
+                const x = scaleX(p.easting);
+                const y = scaleY(p.northing);
+                ctx.save();
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.arc(x, y, 14, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            });
+            
+            // Draw labels with background for readability
+            if (showLabels) {
+                ctx.font = '10px -apple-system, sans-serif';
+                points.forEach(p => {
+                    const x = scaleX(p.easting);
+                    const y = scaleY(p.northing);
+                    const size = p.survey_type === 'control' ? 8 : 6;
+                    const label = p.point_id;
+                    const labelWidth = ctx.measureText(label).width;
+                    
+                    // Draw label background
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                    ctx.fillRect(x + size + 2, y - 6, labelWidth + 4, 12);
+                    
+                    // Draw label text
+                    ctx.fillStyle = '#18181b';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(label, x + size + 4, y + 3);
+                });
+            }
             
             // Axis titles
             ctx.fillStyle = '#52525b';
             ctx.font = '11px -apple-system, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('Easting (m)', width / 2, height - 10);
+            ctx.fillText('Easting (m)', width / 2, height - 8);
             ctx.save();
-            ctx.translate(15, height / 2);
+            ctx.translate(12, height / 2);
             ctx.rotate(-Math.PI / 2);
             ctx.fillText('Northing (m)', 0, 0);
             ctx.restore();
             
-            // Store point positions for click detection
+            // Draw professional scale bar
+            const scaleBarWidth = 120; // pixels
+            const scaleDistance = scaleBarWidth * metersPerPixel;
+            // Round to nice number
+            const niceNumbers = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
+            let actualScale = niceNumbers[0];
+            for (const n of niceNumbers) {
+                if (n <= scaleDistance) actualScale = n;
+            }
+            const actualBarWidth = actualScale / metersPerPixel;
+            
+            const sbX = width - padding - actualBarWidth - 10;
+            const sbY = height - 35;
+            
+            // Scale bar background
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+            ctx.shadowBlur = 6;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillRect(sbX - 8, sbY - 18, actualBarWidth + 16, 32);
+            ctx.restore();
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(sbX - 8, sbY - 18, actualBarWidth + 16, 32);
+            
+            // Alternating scale bar segments
+            const segments = 4;
+            const segWidth = actualBarWidth / segments;
+            for (let i = 0; i < segments; i++) {
+                ctx.fillStyle = i % 2 === 0 ? '#1e293b' : '#ffffff';
+                ctx.fillRect(sbX + i * segWidth, sbY, segWidth, 6);
+            }
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(sbX, sbY, actualBarWidth, 6);
+            
+            // End ticks
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(sbX - 1, sbY - 3, 2, 12);
+            ctx.fillRect(sbX + actualBarWidth - 1, sbY - 3, 2, 12);
+            
+            // Scale label
+            ctx.font = 'bold 10px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#374151';
+            ctx.fillText(`${actualScale} m`, sbX + actualBarWidth / 2, sbY - 6);
+            
+            // Draw stylish north arrow
+            const naX = width - 35;
+            const naY = padding + 30;
+            
+            // Arrow circle background
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 2;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(naX, naY, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(naX, naY, 22, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // North arrow
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.moveTo(naX, naY - 14);
+            ctx.lineTo(naX - 5, naY + 4);
+            ctx.lineTo(naX, naY);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath();
+            ctx.moveTo(naX, naY - 14);
+            ctx.lineTo(naX + 5, naY + 4);
+            ctx.lineTo(naX, naY);
+            ctx.closePath();
+            ctx.fill();
+            
+            // N label
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 10px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('N', naX, naY + 14);
+            
+            // Draw legend
+            const legX = padding + 10;
+            const legY = padding + 10;
+            const legItems = [
+                { shape: 'triangle', color: colors.control, label: 'Control' },
+                { shape: 'circle', color: colors.traverse, label: 'Traverse' },
+                { shape: 'diamond', color: colors.detail, label: 'Detail' },
+                { shape: 'circle', color: flaggedColor, label: 'Issue', dashed: true }
+            ];
+            
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 2;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.fillRect(legX, legY, 90, legItems.length * 20 + 10);
+            ctx.restore();
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(legX, legY, 90, legItems.length * 20 + 10);
+            
+            legItems.forEach((item, i) => {
+                const iy = legY + 15 + i * 20;
+                const ix = legX + 15;
+                
+                if (item.shape === 'triangle') {
+                    drawTriangle(ctx, ix, iy, 6, item.color, false);
+                } else if (item.shape === 'diamond') {
+                    drawDiamond(ctx, ix, iy, 5, item.color, false);
+                } else {
+                    drawCircle(ctx, ix, iy, 5, item.color, false);
+                }
+                
+                if (item.dashed) {
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([3, 3]);
+                    ctx.beginPath();
+                    ctx.arc(ix, iy, 9, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                
+                ctx.fillStyle = '#374151';
+                ctx.font = '11px -apple-system, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(item.label, ix + 14, iy + 4);
+            });
+            
+            // Store point positions for hover/click detection
             canvas._pointPositions = points.map(p => ({
                 x: scaleX(p.easting),
                 y: scaleY(p.northing),
@@ -1558,11 +2043,62 @@ bo1,556625.394,715058.507,2.16"></textarea>
             }));
             canvas._result = result;
             
-            // Add click handler if not already added
-            if (!canvas._clickHandlerAdded) {
-                canvas._clickHandlerAdded = true;
+            // Add event handlers if not already added
+            if (!canvas._handlersAdded) {
+                canvas._handlersAdded = true;
                 canvas.addEventListener('click', handleCanvasClick);
+                canvas.addEventListener('mousemove', handleCanvasHover);
+                canvas.addEventListener('mouseleave', hideVizTooltip);
             }
+        }
+        
+        function handleCanvasHover(e) {
+            const canvas = e.target;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (!canvas._pointPositions) return;
+            
+            const hovered = canvas._pointPositions.find(p => {
+                const dx = p.x - x;
+                const dy = p.y - y;
+                return Math.sqrt(dx*dx + dy*dy) < 12;
+            });
+            
+            const tooltip = document.getElementById('vizTooltip');
+            if (hovered) {
+                const p = hovered.point;
+                const issues = canvas._result.issues.filter(i => i.point_ids && i.point_ids.includes(p.point_id));
+                
+                let html = `<div class="viz-tooltip-title">${p.point_id} <span style="opacity:0.6;">(${p.survey_type})</span></div>`;
+                html += `<div class="viz-tooltip-row"><span class="viz-tooltip-label">E:</span><span>${p.easting.toFixed(3)}</span></div>`;
+                html += `<div class="viz-tooltip-row"><span class="viz-tooltip-label">N:</span><span>${p.northing.toFixed(3)}</span></div>`;
+                if (p.height) html += `<div class="viz-tooltip-row"><span class="viz-tooltip-label">H:</span><span>${p.height.toFixed(3)}</span></div>`;
+                if (hovered.isFlagged && issues.length > 0) {
+                    html += `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.2);color:#fca5a5;">`;
+                    issues.forEach(i => { html += `⚠ ${i.description}<br>`; });
+                    html += `</div>`;
+                }
+                
+                tooltip.innerHTML = html;
+                tooltip.classList.add('visible');
+                
+                // Position tooltip
+                let tx = x + 15;
+                let ty = y - 10;
+                if (tx + 200 > rect.width) tx = x - 180;
+                if (ty < 10) ty = y + 20;
+                tooltip.style.left = tx + 'px';
+                tooltip.style.top = ty + 'px';
+            } else {
+                tooltip.classList.remove('visible');
+            }
+        }
+        
+        function hideVizTooltip() {
+            const tooltip = document.getElementById('vizTooltip');
+            if (tooltip) tooltip.classList.remove('visible');
         }
         
         function handleCanvasClick(e) {
