@@ -338,6 +338,52 @@
             margin-top: 16px;
         }
 
+        .table-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: var(--bg-muted);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            font-size: 13px;
+        }
+
+        .row-count-label {
+            color: var(--text-muted);
+        }
+
+        .btn-link {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 13px;
+            padding: 4px 8px;
+        }
+
+        .btn-link:hover {
+            text-decoration: underline;
+        }
+
+        .table-wrap.collapsed {
+            max-height: 320px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .table-wrap.collapsed::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(transparent, var(--bg-white));
+            pointer-events: none;
+        }
+
         .section-divider {
             border: none;
             border-top: 1px solid var(--border);
@@ -798,7 +844,7 @@
                     </span>
                 </div>
 
-                <div class="table-wrap">
+                <div class="table-wrap" id="tableWrap">
                     <table>
                         <thead>
                             <tr>
@@ -813,6 +859,11 @@
                         </thead>
                         <tbody id="pointsBody"></tbody>
                     </table>
+                </div>
+                
+                <div id="tableToggleRow" class="table-toggle-row" style="display:none;">
+                    <span id="tableRowCount" class="row-count-label"></span>
+                    <button class="btn btn-link" id="toggleTableBtn" onclick="toggleTableExpand()">Show All</button>
                 </div>
 
                 <div class="actions-row">
@@ -909,10 +960,42 @@ bo1,556625.394,715058.507,2.16"></textarea>
     <script>
         let rowCount = 0;
         let lastResult = null;
+        let tableExpanded = true;
+        const COLLAPSE_THRESHOLD = 10;
 
         document.addEventListener('DOMContentLoaded', () => {
             addRow(); addRow(); addRow();
         });
+
+        function updateTableToggle() {
+            const tbody = document.getElementById('pointsBody');
+            const totalRows = tbody.children.length;
+            const toggleRow = document.getElementById('tableToggleRow');
+            const tableWrap = document.getElementById('tableWrap');
+            const countLabel = document.getElementById('tableRowCount');
+            const toggleBtn = document.getElementById('toggleTableBtn');
+            
+            if (totalRows > COLLAPSE_THRESHOLD) {
+                toggleRow.style.display = 'flex';
+                countLabel.textContent = `${totalRows} points`;
+                
+                if (!tableExpanded) {
+                    tableWrap.classList.add('collapsed');
+                    toggleBtn.textContent = `Show All ${totalRows} Rows`;
+                } else {
+                    tableWrap.classList.remove('collapsed');
+                    toggleBtn.textContent = 'Collapse';
+                }
+            } else {
+                toggleRow.style.display = 'none';
+                tableWrap.classList.remove('collapsed');
+            }
+        }
+
+        function toggleTableExpand() {
+            tableExpanded = !tableExpanded;
+            updateTableToggle();
+        }
 
         function addRow(pointId = '', easting = '', northing = '', height = '', type = 'traverse') {
             const tbody = document.getElementById('pointsBody');
@@ -1786,6 +1869,12 @@ bo1,556625.394,715058.507,2.16"></textarea>
                 addRow(pointId, easting, northing, height, type);
                 importedCount++;
             }
+            
+            // Collapse table if many rows imported
+            if (importedCount > COLLAPSE_THRESHOLD) {
+                tableExpanded = false;
+            }
+            updateTableToggle();
             
             closeCsvModal();
             alert(`Imported ${importedCount} points.`);
