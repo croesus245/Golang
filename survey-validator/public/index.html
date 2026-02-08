@@ -881,14 +881,7 @@ bo1,556625.394,715058.507,2.16"></textarea>
                         <label style="margin-left:20px;"><input type="checkbox" id="csvAutoType" checked> Auto-detect type from point name</label>
                     </div>
                     <div id="columnMappingSection" style="display:none;margin-top:12px;">
-                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Column Mapping (1-based index or leave blank to skip):</div>
-                        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
-                            <div><label style="font-size:11px;">Point ID</label><input type="number" id="colPointId" value="1" min="1" style="width:100%;padding:4px;"></div>
-                            <div><label style="font-size:11px;">Easting</label><input type="number" id="colEasting" value="2" min="1" style="width:100%;padding:4px;"></div>
-                            <div><label style="font-size:11px;">Northing</label><input type="number" id="colNorthing" value="3" min="1" style="width:100%;padding:4px;"></div>
-                            <div><label style="font-size:11px;">Height</label><input type="number" id="colHeight" value="4" min="1" style="width:100%;padding:4px;"></div>
-                            <div><label style="font-size:11px;">Type</label><input type="number" id="colType" value="5" min="1" style="width:100%;padding:4px;"></div>
-                        </div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Column positions will be auto-detected. Preview shows detected mapping.</div>
                     </div>
                 </div>
                 
@@ -898,7 +891,7 @@ bo1,556625.394,715058.507,2.16"></textarea>
                 </div>
                 
                 <p class="help-text">
-                    Supports comma or tab-separated values. For headerless data, uncheck "First row is header" and set column positions.
+                    Supports comma or tab-separated values. For headerless data, uncheck "First row is header" — columns are auto-detected.
                 </p>
             </div>
             <div class="modal-footer">
@@ -1687,14 +1680,17 @@ bo1,556625.394,715058.507,2.16"></textarea>
             
             const detected = autoDetectColumns(dataRow, delimiter);
             
-            // Update column mapping UI
+            // Show column mapping info
             if (!hasHeaders) {
-                document.getElementById('columnMappingSection').style.display = 'block';
-                document.getElementById('colPointId').value = detected.pointId >= 0 ? detected.pointId + 1 : '';
-                document.getElementById('colEasting').value = detected.easting >= 0 ? detected.easting + 1 : '';
-                document.getElementById('colNorthing').value = detected.northing >= 0 ? detected.northing + 1 : '';
-                document.getElementById('colHeight').value = detected.height >= 0 ? detected.height + 1 : '';
-                document.getElementById('colType').value = detected.type >= 0 ? detected.type + 1 : '';
+                const mappingDiv = document.getElementById('columnMappingSection');
+                mappingDiv.style.display = 'block';
+                mappingDiv.innerHTML = `<div style="font-size:12px;color:var(--text-secondary);">
+                    <strong>Detected columns:</strong> 
+                    Point ID: ${detected.pointId >= 0 ? detected.pointId + 1 : '—'}, 
+                    Easting: ${detected.easting >= 0 ? detected.easting + 1 : '—'}, 
+                    Northing: ${detected.northing >= 0 ? detected.northing + 1 : '—'}, 
+                    Height: ${detected.height >= 0 ? detected.height + 1 : '—'}
+                </div>`;
             } else {
                 document.getElementById('columnMappingSection').style.display = 'none';
             }
@@ -1746,21 +1742,18 @@ bo1,556625.394,715058.507,2.16"></textarea>
                 heightIdx = headers.findIndex(h => h.includes('height') || h.includes('z') || h.includes('elev'));
                 typeIdx = headers.findIndex(h => h.includes('type'));
             } else {
-                // Use manual column mapping or auto-detected values
+                // Always run auto-detection for headerless CSV
                 const dataRow = lines[0];
                 const detected = autoDetectColumns(dataRow, delimiter);
                 
-                const colPid = document.getElementById('colPointId').value;
-                const colE = document.getElementById('colEasting').value;
-                const colN = document.getElementById('colNorthing').value;
-                const colH = document.getElementById('colHeight').value;
-                const colT = document.getElementById('colType').value;
+                // Use auto-detected values (manual override only if Preview was used)
+                pointIdIdx = detected.pointId;
+                eastingIdx = detected.easting;
+                northingIdx = detected.northing;
+                heightIdx = detected.height;
+                typeIdx = detected.type;
                 
-                pointIdIdx = colPid ? parseInt(colPid) - 1 : detected.pointId;
-                eastingIdx = colE ? parseInt(colE) - 1 : detected.easting;
-                northingIdx = colN ? parseInt(colN) - 1 : detected.northing;
-                heightIdx = colH ? parseInt(colH) - 1 : detected.height;
-                typeIdx = colT ? parseInt(colT) - 1 : detected.type;
+                console.log('Auto-detected columns:', { pointIdIdx, eastingIdx, northingIdx, heightIdx, typeIdx });
             }
             
             if (eastingIdx < 0 || northingIdx < 0) {
